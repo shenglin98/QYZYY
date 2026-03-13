@@ -1,0 +1,244 @@
+<template>
+  <div class="selfselection">
+    <div class="mainbody">
+      <div class="mbtop" v-if="pagedata && pagedata.length > 0">
+        {{ pagedata[0].caption }}
+      </div>
+      <div class="mbtop" v-else>暂无数据</div>
+      <div class="select_box" v-if="pagedata.length">
+        <div class="for_box" v-for="(item, index) in pagedata" :key="index">
+          <div class="sbtitle">
+            <div class="sbtitletext">
+              {{ item.deptname }}
+            </div>
+            <div class="quanxuan">
+              <el-checkbox
+                v-model="item.ischeckall"
+                @change="handleCheckAllChange($event, item)"
+                >全选</el-checkbox
+              >
+            </div>
+          </div>
+          <el-checkbox-group
+            v-model="item.checkList"
+            @change="handleChange($event, item.deptcode)"
+          >
+            <!-- <div class="sbtitle">
+            <div class="sbtitletext">
+              {{ item.deptname }}
+            </div>
+            <div class="quanxuan">
+              <el-checkbox
+                v-model="item.checkall"
+                @change="handleCheckAllChange($event, false, item)"
+                >全选</el-checkbox
+              >
+            </div>
+          </div> -->
+            <div class="sbcheck_box">
+              <el-checkbox
+                v-for="(value, ind) in item.combinitems"
+                :key="ind"
+                class="sbcheckbox"
+                :label="value.combinecode"
+                >{{ value.combinename }}</el-checkbox
+              >
+            </div>
+          </el-checkbox-group>
+        </div>
+      </div>
+      <van-button round type="info" size="large" @click="handleNowReservation"
+        >立即预约</van-button
+      >
+    </div>
+  </div>
+</template>
+<script>
+import { HealthCheckForH5, CheckChooseRule } from "@/api/reservation.js";
+export default {
+  name: "selfselection",
+
+  components: {},
+
+  data() {
+    return {
+      checked: false,
+      userData: "",
+      operatorcode: "",
+      groupObj: "",
+      pagedata: [],
+      checkList: {},
+      setmealcode: "",
+      allCombine: [],
+      ischeckall: true,
+      tempData: null,
+    };
+  },
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$toast.fail("当前人员未建档,请传入当前操作人编码!");
+      this.$router.push("/login");
+      return false;
+    }
+    let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+    this.setmealcode = data.setmealcode || "";
+    this.userData = JSON.parse(localStorage.getItem("companyUserInfo")) || "";
+    if (this.userData && this.userData.recommendgroupitem) {
+      this.groupObj = this.userData.recommendgroupitem;
+    } else {
+      this.groupObj = this.userData;
+    }
+    // this.userData && (this.groupObj = this.userData.recommendgroupitem);
+    console.log(this.groupObj);
+    this.handleGetPageData();
+  },
+
+  methods: {
+    handleCheckAllChange(ischeck, item) {
+      item.checkList = ischeck
+        ? item.combinitems.map((k) => k.combinecode)
+        : [];
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.groupObj.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    handleChange(value, index) {
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.groupObj.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+          // for (let i = 0; i < this.pagedata.length; i++) {
+          //   let index = this.pagedata[i].checkList.findIndex(
+          //     (k) => k == value[value.length - 1]
+          //   );
+          //   index > -1 && this.pagedata[i].checkList.splice(index, 1);
+          // }
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    handleNowReservation() {
+      let selectCode = [];
+      let combineitems = [];
+      for (let index = 0; index < this.pagedata.length; index++) {
+        if (this.pagedata[index].checkList.length > 0) {
+          selectCode.push(...this.pagedata[index].checkList);
+        }
+      }
+      if (selectCode.length > 0) {
+        combineitems = this.allCombine.filter((k) => {
+          return selectCode.includes(k.combinecode);
+        });
+      }
+      this.$router.push({
+        path: "/projectConfirm",
+        query: {
+          setmealcode: this.setmealcode,
+          combineitems: encodeURIComponent(JSON.stringify(combineitems)),
+        },
+      });
+    },
+    handleGetPageData() {
+      HealthCheckForH5({
+        businesstype: "RuleCombineList",
+        whereitems: [
+          {
+            key: "groupid",
+            value: this.groupObj.groupid,
+          },
+        ],
+      }).then((res) => {
+        this.pagedata = res.data.result.map((v, k) => {
+          v.checkList = [];
+          return v;
+        });
+        res.data.result.forEach((k) => {
+          this.allCombine.push(...k.combinitems);
+        });
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.selfselection {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  padding: 6px;
+  box-sizing: border-box;
+  .mainbody {
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 6px;
+    .mbtop {
+      font-weight: 600;
+      font-size: 16px;
+      min-height: 40px;
+      overflow-y: auto;
+      max-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #e6effb;
+    }
+    .select_box {
+      margin-top: 10px;
+      height: calc(100% - 120px);
+      box-sizing: border-box;
+      overflow-y: auto;
+      padding: 0 0 10px 10px;
+      .sbtitle {
+        font-weight: 600;
+        font-size: 16px;
+        display: flex;
+        .quanxuan {
+          margin-left: 10px;
+        }
+      }
+      .sbcheck_box {
+        padding: 0 0 0 10px;
+        .sbcheckbox {
+          margin: 8px 0;
+        }
+      }
+    }
+  }
+}
+</style>

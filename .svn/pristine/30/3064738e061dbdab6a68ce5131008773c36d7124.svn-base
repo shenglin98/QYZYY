@@ -1,0 +1,351 @@
+<template>
+  <div class="selfselection">
+    <div class="mainbody">
+      <div class="mbtop" v-if="pagedata && pagedata.length > 0">
+        {{ pagedata[0].caption }}
+      </div>
+      <div class="mbtop" v-else>暂无数据</div>
+      <div class="select_box" v-if="pagedata.length">
+        <div
+          class="for_box_self"
+          v-for="(item, index) in pagedata"
+          :key="index"
+        >
+          <div class="sbtitle">
+            <div class="sbtitletext">
+              {{ item.deptname }}
+            </div>
+            <div class="quanxuan">
+              <!-- <el-checkbox
+                v-model="item.ischeckall"
+                @change="handleCheckAllChange($event, item)"
+                >全选</el-checkbox
+              > -->
+              <el-button
+                type="primary"
+                size="mini"
+                @click="handleCheckAllChange(true, item)"
+                >全选</el-button
+              >
+              <el-button
+                type="warning"
+                size="mini"
+                @click="handleCheckAllChange(false, item)"
+                >取消全选</el-button
+              >
+            </div>
+          </div>
+          <van-checkbox-group class="group_box" v-model="item.checkList">
+            <van-checkbox
+              v-for="(value, ind) in item.combinitems"
+              :key="ind"
+              :name="value.combinecode"
+              @click="handleChange"
+              label-position="left"
+              >{{ value.combinename }}</van-checkbox
+            >
+          </van-checkbox-group>
+
+          <!-- <el-checkbox-group
+            v-model="item.checkList"
+            @change="handleChange($event, item.deptcode)"
+            @touchstart="handletest"
+          >
+            <div class="sbcheck_box">
+              <el-checkbox
+                v-for="(value, ind) in item.combinitems"
+                :key="ind"
+                class="sbcheckbox"
+                :label="value.combinecode"
+                >{{ value.combinename }}</el-checkbox
+              >
+            </div>
+          </el-checkbox-group> -->
+        </div>
+      </div>
+      <van-button round type="info" size="large" @click="handleNowReservation"
+        >立即预约</van-button
+      >
+    </div>
+  </div>
+</template>
+<script>
+import { HealthCheckForH5, CheckChooseRule } from "@/api/reservation.js";
+export default {
+  name: "selfselection",
+
+  components: {},
+
+  data() {
+    return {
+      checked: false,
+      userData: "",
+      operatorcode: "",
+      groupObj: "",
+      pagedata: [],
+      checkList: {},
+      setmealcode: "",
+      allCombine: [],
+      ischeckall: true,
+      tempData: null,
+      clickFlag: true,
+      isBack: false,
+      combineitems: [],
+    };
+  },
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$router.push("/login");
+      return false;
+    }
+    let dataTemp = this.$route.query || undefined;
+    dataTemp.isBack && (this.isBack = dataTemp.isBack);
+    if (dataTemp.combineitems) {
+      this.combineitems = JSON.parse(decodeURIComponent(dataTemp.combineitems));
+    }
+    let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+    this.setmealcode = data.setmealcode || "";
+    this.userData = JSON.parse(localStorage.getItem("companyUserInfo")) || "";
+    if (this.userData && this.userData.recommendgroupitem) {
+      this.groupObj = this.userData.recommendgroupitem;
+    } else {
+      this.groupObj = this.userData;
+    }
+    // this.userData && (this.groupObj = this.userData.recommendgroupitem);
+    this.handleGetPageData();
+    // let domArr = document.getElementsByClassName("sbcheckbox") || [];
+    // for (let i = 0; i < domArr.length; i++) {
+    //   domArr[i].addEventListener("change", function (event) {
+    //     event.preventDefault();
+    //     event.stopPropagation();
+    //     // 其他处理逻辑
+    //   });
+    // }
+  },
+
+  methods: {
+    handleCheckAllChange(ischeck, item) {
+      item.checkList = ischeck
+        ? item.combinitems.map((k) => k.combinecode)
+        : [];
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.groupObj.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    handleChange(e, value, index) {
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList && k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.groupObj.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+          // for (let i = 0; i < this.pagedata.length; i++) {
+          //   let index = this.pagedata[i].checkList.findIndex(
+          //     (k) => k == value[value.length - 1]
+          //   );
+          //   index > -1 && this.pagedata[i].checkList.splice(index, 1);
+          // }
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    handleNowReservation() {
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.groupObj.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (data.allowSubmit) {
+          if (data.dialogWarn) {
+            this.$dialog
+              .alert({
+                title: "注意事项",
+                message: `${data.dialogWarn}`,
+                confirmButtonText: "确定",
+                confirmButtonColor: "#1989fa",
+              })
+              .then(() => {
+                this.handleNowReservationSS();
+              })
+              .catch(() => {});
+          } else {
+            this.handleNowReservationSS();
+          }
+        } else {
+          this.$toast.fail("必须选中自选项目!");
+        }
+      });
+    },
+    handleNowReservationSS() {
+      let selectCode = [];
+      let combineitems = [];
+      for (let index = 0; index < this.pagedata.length; index++) {
+        if (this.pagedata[index].checkList.length > 0) {
+          selectCode.push(...this.pagedata[index].checkList);
+        }
+      }
+      if (selectCode.length > 0) {
+        combineitems = this.allCombine.filter((k) => {
+          return selectCode.includes(k.combinecode);
+        });
+      }
+      localStorage.setItem("deedbackData", JSON.stringify(this.pagedata));
+      this.$router.push({
+        path: "/projectConfirm",
+        query: {
+          setmealcode: this.setmealcode,
+          combineitems: encodeURIComponent(JSON.stringify(combineitems)),
+        },
+      });
+    },
+    handleGetPageData() {
+      HealthCheckForH5({
+        businesstype: "RuleCombineList",
+        whereitems: [
+          {
+            key: "groupid",
+            value: this.groupObj.groupid,
+          },
+        ],
+      }).then((res) => {
+        this.pagedata = res.data.result.map((v, k) => {
+          v.checkList = [];
+          return v;
+        });
+        res.data.result.forEach((k) => {
+          this.allCombine.push(...k.combinitems);
+        });
+        this.$nextTick(() => {
+          if (this.isBack) {
+            // let mapArr = this.combineitems.map((k) => {
+            //   return k.combinecode;
+            // });
+            // for (let i = 0; i < mapArr.length; i++) {
+            //   for (let j = 0; j < this.pagedata.length; j++) {
+            //     let flag = this.pagedata[j].combinitems.filter(
+            //       (val) => mapArr[i] == val.combinecode
+            //     )[0];
+            //     if (flag) {
+            //       this.pagedata[j].checkList.push(flag.combinecode);
+            //     }
+            //   }
+            // }
+            this.pagedata =
+              JSON.parse(localStorage.getItem("deedbackData")) || [];
+            this.tempData =
+              JSON.parse(localStorage.getItem("deedbackData")) || [];
+          }
+        });
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.selfselection {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  padding: 6px;
+  box-sizing: border-box;
+  .mainbody {
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 6px;
+    .mbtop {
+      font-weight: 600;
+      font-size: 16px;
+      min-height: 40px;
+      overflow-y: auto;
+      max-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #e6effb;
+    }
+    .select_box {
+      margin-top: 10px;
+      height: calc(100% - 120px);
+      box-sizing: border-box;
+      overflow-y: auto;
+      padding: 0 0 10px 10px;
+      .for_box_self {
+        margin-top: 10px;
+        .group_box {
+          margin-top: 5px;
+          .van-checkbox {
+            min-height: 35px;
+            border-top: 1px solid #f5f6f7;
+            display: flex;
+            box-sizing: border-box;
+            padding: 5px 20px 5px 10px;
+            justify-content: space-between;
+          }
+        }
+      }
+      .sbtitle {
+        font-weight: 600;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        padding-right: 20px;
+        .quanxuan {
+          margin-left: 10px;
+        }
+      }
+      .sbcheck_box {
+        padding: 0 0 0 10px;
+        display: flex;
+        flex-direction: column;
+        .sbcheckbox {
+          margin: 8px 0;
+        }
+      }
+    }
+  }
+}
+</style>

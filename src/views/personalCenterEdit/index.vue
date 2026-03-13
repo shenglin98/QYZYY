@@ -1,0 +1,308 @@
+<template>
+  <div class="editbox">
+    <div class="user">
+      <div class="title">
+        <p class="msg">账号信息</p>
+        <van-button plain size="mini" @click="handleEditPhone" type="info"
+          >修改登陆手机号</van-button
+        >
+      </div>
+      <ul>
+        <li>
+          账号信息<span>{{ pageForm.name }}</span>
+        </li>
+        <li>
+          注册日期<span>{{ pageForm.operatdate }}</span>
+        </li>
+      </ul>
+    </div>
+    <!-- 新增编辑页 -->
+    <div class="details">
+      <div class="titleBox">
+        <p class="title">基本信息</p>
+        <p class="setmsg" @click="handleRouteSetMsg">修改资料</p>
+      </div>
+      <div class="pageform">
+        <van-form style="border: 1px solid gray" readonly>
+          <!-- 姓名 -->
+          <div class="name_box">
+            <van-field
+              v-model="pageForm.name"
+              name="姓名"
+              label="姓名"
+              placeholder="（必填）请输入姓名"
+              :rules="[{ required: true, message: '请填写姓名' }]"
+            />
+          </div>
+          <!-- 证件类型 -->
+          <van-field
+            readonly
+            name="picker"
+            label="证件类型"
+            placeholder="点击选择证件类型"
+          >
+            <template #input>
+              {{
+                pageForm.idtype == "01"
+                  ? "身份证"
+                  : pageForm.idtype == "02"
+                  ? "居民户口簿"
+                  : pageForm.idtype == "03"
+                  ? "护照"
+                  : pageForm.idtype == "04"
+                  ? "军官证"
+                  : pageForm.idtype == "05"
+                  ? "驾驶证"
+                  : pageForm.idtype == "06"
+                  ? "港澳居民来往内地通行证"
+                  : pageForm.idtype == "07"
+                  ? "台湾居民来往内地通行证"
+                  : ""
+              }}
+            </template>
+          </van-field>
+          <!-- 身份证 -->
+          <van-field
+            v-model="pageForm.idcard"
+            name="身份证"
+            label="身份证"
+            placeholder="身份证"
+          />
+          <!-- 性别 -->
+          <van-field name="radio" label="性别" readonly>
+            <template #input>
+              {{ pageForm.sex == 1 ? "男" : pageForm.sex == 2 ? "女" : "未知" }}
+            </template>
+          </van-field>
+          <!-- 生日 -->
+          <van-field
+            readonly
+            name="date"
+            :value="pageForm.birthday"
+            label="生日"
+            placeholder="生日"
+          />
+
+          <!-- 婚姻状况 -->
+          <van-field
+            name="radio"
+            label="婚姻状况"
+            v-model="pageForm.marriage"
+            placeholder="婚姻状况"
+          >
+          </van-field>
+          <!-- 手机号 -->
+          <van-field
+            v-model="pageForm.telephone"
+            name="手机号"
+            label="手机号"
+            placeholder="手机号"
+          />
+          <!-- 身高 -->
+          <van-field
+            v-model="pageForm.height"
+            name="height"
+            label="身高"
+            placeholder="cm"
+          />
+          <!-- 体重 -->
+          <van-field
+            v-model="pageForm.weight"
+            name="width"
+            label="体重"
+            placeholder="kg"
+          />
+        </van-form>
+      </div>
+      <van-dialog
+        v-model="dialogVisible"
+        :before-close="beforeClose"
+        showCancelButton
+        messageAlign
+        :close-on-click-overlay="false"
+        title="修改登陆人手机号"
+      >
+        <div>
+          <van-form>
+            <van-field
+              v-model="setUser.name"
+              name="姓名"
+              label="姓名"
+              placeholder="（必填）请输入姓名"
+              :rules="[{ required: true, message: '请填写姓名' }]"
+            />
+            <van-field
+              v-model="setUser.telephone"
+              name="手机号"
+              label="手机号"
+              placeholder="（必填）请输入手机号"
+              :rules="[
+                {
+                  required: true,
+                  message: '请填写手机号',
+                },
+              ]"
+            />
+          </van-form>
+        </div>
+      </van-dialog>
+    </div>
+  </div>
+</template>
+<script>
+import { getListData, UpdateOutUser } from "@/api/reservation.js";
+export default {
+  name: "edit",
+
+  components: {},
+
+  data() {
+    return {
+      pageForm: {}, // 个人信息
+      pageForm: {
+        id: "",
+        name: "",
+        sex: 0,
+        birthday: "",
+        marriage: "",
+        telephone: "",
+        idcard: "",
+        idtype: "01",
+        idcardcn: "身份证",
+        relation: "",
+        delflag: 0,
+        operatorcode: "",
+        hiscode: "",
+        healthcard: "",
+        height: "",
+        width: "",
+      }, // 基本信息
+      operatorcode: "",
+      dialogVisible: false,
+      setUser: {
+        telephone: "",
+        name: "",
+        operatorcode: "",
+      },
+    };
+  },
+  props: {},
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    this.setUser.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$router.push("/index");
+      return false;
+    }
+    this.getUserData();
+  },
+
+  methods: {
+    beforeClose(action, done) {
+      if (action == "confirm") {
+        console.log(this.setUser.telephone.length < 11, !this.setUser.name);
+        if (this.setUser.telephone.length < 11 || !this.setUser.name) {
+          this.$toast.fail("姓名为空或手机号格式不正确!");
+          done(false);
+        } else {
+          UpdateOutUser(this.setUser).then((res) => {
+            this.getUserData();
+            done();
+          });
+        }
+      } else {
+        this.dialogVisible = false;
+        done();
+      }
+    },
+    // 修改手机号
+    handleEditPhone() {
+      this.setUser = {
+        ...this.setUser,
+        name: this.pageForm.name,
+        telephone: this.pageForm.telephone,
+      };
+      this.dialogVisible = true;
+    },
+    handleRouteSetMsg() {
+      console.log(JSON.stringify(this.pageForm));
+      this.$router.push({
+        path: "/PersonalCenterSet",
+        query: { pageForm: encodeURIComponent(JSON.stringify(this.pageForm)) },
+      });
+    },
+    getUserData() {
+      getListData({
+        businesstype: "OutUserInfo",
+        code: this.operatorcode,
+        whereitems: [],
+      }).then((res) => {
+        console.log("获取当前个人信息", res);
+        res.data.result && (this.pageForm = res.data.result);
+      });
+    },
+  },
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.editbox {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  .details {
+    width: 100%;
+    height: 100%;
+    .titleBox {
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      .title {
+        margin: 5px 0;
+        padding-left: 15px;
+      }
+      .setmsg {
+        color: #c1e912;
+        margin: 0 5px 0;
+        text-decoration: underline;
+      }
+    }
+    .pageform {
+      padding: 0 10px;
+      box-sizing: border-box;
+    }
+    .btn_d {
+      width: 100%;
+      margin-top: 50px;
+      text-align: center;
+      .van-button {
+        width: 30%;
+        margin-right: 10px;
+      }
+    }
+  }
+  .user {
+    width: 94%;
+    padding-left: 15px;
+    font-size: 12px;
+
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    ul {
+      li {
+        margin: 10px 0;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+</style>

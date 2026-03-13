@@ -1,0 +1,134 @@
+<template>
+  <div class="index">
+    <van-form>
+      <van-field
+        v-model="name"
+        name="姓名"
+        label="姓名"
+        placeholder="姓名"
+        :rules="[{ required: true, message: '请填写用姓名' }]"
+      />
+      <van-field
+        v-model="examination"
+        name="证件号"
+        label="证件号"
+        placeholder="证件号"
+        :rules="[{ required: true, message: '请填写证件号' }]"
+      />
+      <div style="margin: 16px">
+        <van-button round block type="info" @click="Inquire">查 询</van-button>
+      </div>
+    </van-form>
+    <!-- <div class="name">
+      <span>姓名</span
+      ><input type="text" v-model="name" placeholder="请输入姓名" />
+    </div>
+    <div class="name two">
+      证件号<input
+        type="text"
+        v-model="examination"
+        placeholder="请输入身份证号或其他证件号"
+      />
+    </div>
+    <div class="name theer">
+      <button @click="Inquire">查询</button>
+    </div> -->
+  </div>
+</template>
+
+<script>
+import api from "../../api/index";
+export default {
+  data() {
+    return {
+      examination: "", //"2000700026", //13250788268",//440181199908022135
+      name: "", //麦韶扬
+    };
+  },
+  created() {},
+  mounted() {
+    this.page = this.$route.query.page || "";
+  },
+  methods: {
+    open4() {
+      this.$message.error("姓名或者身份证号不能为空");
+    },
+    Inquire() {
+      if ((this.name && this.examination != "") || null || undefined) {
+        if (this.page == "guidance") {
+          this.$router.push("/guidance");
+        } else {
+          this.GLOBAL.colorList = "我的体检";
+          this.$router.push({
+            path: `/reportQuery`,
+            query: {
+              obj: {
+                name:this.name,
+                keyword:this.examination
+              },
+            },
+          });
+        }
+      } else {
+        this.open4();
+      }
+    },
+  },
+};
+</script>
+<style lang="scss" scoped>
+.index {
+  width: 375px;
+  height: 100vh;
+  // background: pink;
+  position: relative;
+  .van-form {
+    box-sizing: border-box;
+    padding: 15px;
+    .van-button {
+      margin-top: 15px;
+    }
+  }
+  .name {
+    position: absolute;
+    width: 100%;
+    top: 100px;
+    // background: rgb(57, 57, 138);
+    min-height: 40px;
+    line-height: 40px;
+
+    span {
+      margin-right: 8px;
+      margin-left: 25px;
+    }
+
+    input {
+      text-indent: 10px;
+      float: right;
+      width: 80%;
+      height: 35px;
+      margin-top: 2.5px;
+      margin-right: 10px;
+    }
+  }
+
+  .two {
+    top: 160px;
+  }
+
+  .theer {
+    top: 240px;
+
+    button {
+      width: 150px;
+      height: 40px;
+      line-height: 40px;
+      margin-left: 112.5px;
+      text-align: center;
+      background: #169bd5;
+      color: #ffffff;
+      border-radius: 10px;
+    }
+  }
+}
+</style>

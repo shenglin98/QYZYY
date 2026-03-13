@@ -1,0 +1,230 @@
+<template>
+  <div class="login">
+    <!-- 头部 -->
+    <div class="top">
+      <div class="left" @click="handleJumpIndex">
+        <van-icon name="arrow-left" /> 返回
+      </div>
+      <div class="title">登录/注册</div>
+      <div class="mark"></div>
+    </div>
+    <!-- 主体内容 -->
+    <div class="mainbody">
+      <van-image class="body_bg" :src="bgImg" />
+      <div class="info_box">
+        <div class="title">登录 / 注册</div>
+        <el-input
+          class="employ_input"
+          placeholder="请输入姓名"
+          v-model="searchName"
+          clearable
+        >
+        </el-input>
+        <el-input
+          class="employ_input"
+          placeholder="请输入电话号码"
+          v-model="searchPhone"
+          clearable
+          @keyup.enter.native="handleSaveLogin"
+        >
+        </el-input>
+        <van-button
+          round
+          color="#27a7e0"
+          type="primary"
+          size="large"
+          @click="handleSaveLogin"
+          >登录/注册</van-button
+        >
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import { checkH5Login, getUnitInfo } from "@/api/unit.js";
+
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      bgImg: require("@/assets/images/unitregister.png"),
+      searchName: "",
+      searchPhone: "",
+    };
+  },
+
+  mounted() {},
+
+  methods: {
+    // 点击返回主页
+    handleJumpIndex() {
+      this.$router.push("/");
+    },
+    // 点击登录注册
+    async handleSaveLogin() {
+      if (!this.searchName) {
+        this.$toast.fail("姓名不能为空!");
+        return;
+      }
+      if (!this.searchPhone) {
+        this.$toast.fail("手机号不能为空!");
+        return;
+      }
+      let regExp = new RegExp("^1[3578]\\d{9}$");
+      if (!regExp.test(this.searchPhone)) {
+        this.$toast.fail("手机号格式不合法!");
+      }
+      let res = await checkH5Login({
+        Telephone: this.searchPhone,
+        Content: this.searchName,
+        VerifyCode: "",
+        OpenId: "",
+      });
+      this.$toast.success(res.data.message);
+      let tempStr = res.data.licenseKey;
+      const forLength = Array.from(Array(Math.ceil(tempStr.length / 100)));
+      const slices = forLength.map((i, k) => {
+        return tempStr.slice(k * 100, (k + 1) * 100);
+      });
+      let rsaArr = [];
+      slices.forEach((k) => {
+        console.log(k, "");
+        rsaArr.push(encryptDataReturn(k));
+      });
+      let licenseKey = rsaArr.join("~");
+      localStorage.setItem("operatorcode", res.data.userInfoCode);
+      res.data && localStorage.setItem("X-Token", res.data.token);
+      res.data && localStorage.setItem("LICENSE-KEY", licenseKey);
+      setTimeout(() => {
+        this.$router.push("/");
+      }, 500);
+    },
+    // 点击登录注册
+    handleSaveLoginBF() {
+      if (!this.searchName) {
+        this.$toast.fail("姓名不能为空!");
+        return;
+      }
+      if (!this.searchPhone) {
+        this.$toast.fail("手机号不能为空!");
+        return;
+      }
+      let regExp = new RegExp("^1[3578]\\d{9}$");
+      if (!regExp.test(this.searchPhone)) {
+        this.$toast.fail("手机号格式不合法!");
+      }
+      getUnitInfo({
+        businesstype: "OutUserLogin",
+        whereitems: [
+          {
+            key: "name",
+            value: this.searchName,
+          },
+          {
+            key: "mobilephone",
+            value: this.searchPhone,
+          },
+        ],
+      }).then((res) => {
+        if (res.data.code == 200) {
+          this.$toast.success(res.data.message);
+          localStorage.setItem("operatorcode", res.data.result.userInfoCode);
+          this.$router.push("/");
+        } else {
+          this.$toast.fail(res.data.message);
+          this.searchName = "";
+          this.searchPhone = "";
+        }
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.login {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  //   padding: 8px;
+  .top {
+    height: 50px;
+    color: #fff;
+    background-color: #27a7e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0 15px;
+    .title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .left,
+    .mark {
+      width: 50px;
+    }
+  }
+  .mainbody {
+    height: calc(100% - 50px);
+    .body_bg {
+      // height: 200px;
+      width: 100%;
+      margin-top: -3px;
+    }
+    .info_box {
+      width: 90%;
+      background: #ffffff;
+      box-shadow: 1px 2px 18px 0px rgba(172, 172, 172, 0.35);
+      border-radius: 10px;
+      position: absolute;
+      top: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      box-sizing: border-box;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      .title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #27a7e0;
+        height: 30px;
+        text-align: center;
+      }
+      .s_title {
+        font-size: 14px;
+        color: #000;
+        text-align: center;
+      }
+      .el-input {
+        margin: 12px 0;
+      }
+      // .employ_input {
+      //   //   border-radius: 20px;
+
+      //   .el-input__inner {
+      //     // border: 1px solid #ccc;
+      //     border-radius: 20% !important;
+      //   }
+      // }
+    }
+  }
+}
+</style>
+<style lang="scss">
+.employ_input {
+  //   border-radius: 20px;
+  .el-input__inner {
+    // border: 1px solid #ccc;
+    border-radius: 50px !important;
+  }
+}
+</style>

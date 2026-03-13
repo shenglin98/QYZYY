@@ -1,0 +1,63 @@
+.orderList{
+    width: 100%;
+    overflow-y: hidden;
+    .order_box{
+        padding: 0 10px;
+        box-sizing: border-box;
+        .list{
+            width: 100%;
+            border-bottom: 1px solid rgb(219, 219, 219);
+            padding-bottom: 10px;
+            .top{
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 16px;
+                height: 26px;
+                padding-top: 10px;
+            }
+            .floor{
+                display: flex;
+                justify-content: space-between;
+                .operation{
+                    margin-top: 20px;
+                    .examine{
+                        border: none;
+                        width: 80px;
+                        height: 28px;
+                        background: #27A7E0;
+                        border-radius: 6px;
+                        font-size: 16px;
+                        font-family: PingFangSC-Regular, PingFang SC;
+                        font-weight: 400;
+                        color: #FFFFFF;
+                    }
+                    .download{
+                        border: none;
+                        width: 80px;
+                        height: 28px;
+                        background: #27A7E0;
+                        border-radius: 6px;
+                        font-size: 16px;
+                        font-family: PingFangSC-Regular, PingFang SC;
+                        font-weight: 400;
+                        color: #FFFFFF;
+                        margin-left: 10px;
+                    }
+                    .download_no{
+                        border: none;
+                        width: 80px;
+                        height: 28px;
+                        background: #aaaaaa;
+                        border-radius: 6px;
+                        font-size: 16px;
+                        font-family: PingFangSC-Regular, PingFang SC;
+                        font-weight: 400;
+                        color: #FFFFFF;
+                        margin-left: 10px;
+                    }
+                }
+            }
+        }
+    }
+}

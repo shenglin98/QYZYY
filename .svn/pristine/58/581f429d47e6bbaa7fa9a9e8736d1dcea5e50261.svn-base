@@ -1,0 +1,330 @@
+<template>
+  <div class="personalCenter">
+    <div class="usermainbody">
+      <!-- 个人信息 -->
+      <div class="userbox" @click="handleRouteSetMsg">
+        <van-row type="flex" align="center">
+          <van-col span="5" class="userlog">
+            <van-icon name="manager" size="50" color="#27A7E0" />
+          </van-col>
+          <van-col span="15" class="usermsg">
+            <div class="name">{{ userform.name }}</div>
+            <div class="telephone">{{ userform.telephone }}</div></van-col
+          >
+          <van-col span="4" style="text-align: right; padding-right: 20px"
+            ><i class="el-icon-arrow-right"></i
+          ></van-col>
+        </van-row>
+      </div>
+    </div>
+
+    <div class="mainbody">
+      <!-- 头部跳转 -->
+      <div class="top_box">
+        <div class="title">我的订单</div>
+        <div class="link_box">
+          <div class="link_item" @click="handleJumpOrderList(0)">
+            <van-image class="link_icon" :src="iconUrl1" />
+            <div class="text">待支付</div>
+          </div>
+          <div class="link_item" @click="handleJumpOrderList(1)">
+            <van-image class="link_icon" :src="iconUrl2" />
+            <div class="text">已支付</div>
+          </div>
+          <div class="link_item" @click="handleJumpOrderList(2)">
+            <van-image class="link_icon" :src="iconUrl3" />
+            <div class="text">未预约</div>
+          </div>
+          <div class="link_item" @click="handleJumpOrderList(3)">
+            <van-image class="link_icon" :src="iconUrl4" />
+            <div class="text">已预约</div>
+          </div>
+          <div class="link_item" @click="handleJumpOrderList(4)">
+            <van-image class="link_icon" :src="iconUrl5" />
+            <div class="text">未完成</div>
+          </div>
+          <div class="link_item" @click="handleJumpOrderList(5)">
+            <van-image class="link_icon" :src="iconUrl6" />
+            <div class="text">已完成</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="commonBox" @click="handleSetCommon">
+        <van-row type="flex" align="center">
+          <van-col span="20">
+            <p class="title">常用人</p>
+          </van-col>
+          <van-col span="4" style="text-align: right; padding-right: 20px"
+            ><i class="el-icon-arrow-right"></i
+          ></van-col>
+        </van-row>
+        <ul class="listOfUsersBox">
+          <li v-for="(item, index) in commonList" :key="index">
+            {{ item.name }}
+          </li>
+        </ul>
+      </div>
+      <!-- 主体内容 -->
+      <div class="content">
+        <div class="title">检查项目</div>
+        <div class="table_box">
+          <el-table
+            :data="tableData"
+            border
+            height="100%"
+            style="width: 100%"
+            class="table_bg"
+            :header-cell-style="{ background: '#E9F3FF', color: '#27A7E0' }"
+          >
+            <el-table-column type="index" label="序" width="150px">
+            </el-table-column>
+            <el-table-column prop="deptname" label="科室" width="230px">
+            </el-table-column>
+            <el-table-column prop="combinename" label="检查项目">
+            </el-table-column>
+            <el-table-column prop="statuscn" label="状态" width="230px">
+            </el-table-column>
+          </el-table>
+        </div>
+        <div class="table_mess">
+          <div class="mess_item">项目总数：{{ combinecount }}</div>
+          <div class="mess_item">已完成：{{ completecount }}</div>
+          <div class="mess_item">未完成：{{ notcompletecount }}</div>
+        </div>
+      </div>
+      <div class="btn_bom">
+        <van-button round size="normal" type="info" @click="handleLogOff"
+          >注 销</van-button
+        >
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import { getListData } from "@/api/reservation.js";
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      iconUrl1: require("@/assets/images/待支付.png"),
+      iconUrl2: require("@/assets/images/已支付.png"),
+      iconUrl3: require("@/assets/images/未预约.png"),
+      iconUrl4: require("@/assets/images/已预约.png"),
+      iconUrl5: require("@/assets/images/未完成.png"),
+      iconUrl6: require("@/assets/images/已完成.png"),
+      tableData: [],
+      combinecount: 0,
+      notcompletecount: 0,
+      completecount: 0,
+      operatorcode: "",
+      userform: {}, // 个人信息
+      commonList: [], // 常用人列表
+    };
+  },
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$router.push("/login");
+      return false;
+    }
+    this.handleGetListData();
+  },
+
+  methods: {
+    // 设置常用人
+    handleSetCommon() {
+      this.$router.push({
+        path: "/selectUser",
+        query: { isUser: true },
+      });
+    },
+    handleRouteSetMsg() {
+      this.$router.push({
+        path: "/personalCenterEdit",
+      });
+    },
+    // 注销当前用户
+    handleLogOff() {
+      this.$dialog
+        .confirm({
+          title: "提醒",
+          message: "确认注销当前用户吗?",
+          confirmButtonColor: "#1989fa",
+        })
+        .then(() => {
+          // on confirm
+          localStorage.removeItem("operatorcode");
+          localStorage.removeItem("X-Token");
+          localStorage.removeItem("LICENSE-KEY");
+          localStorage.removeItem("userform");
+          this.$router.push("/login");
+        })
+        .catch(() => {
+          // on cancel
+        });
+    },
+    // 获取页面数据
+    handleGetListData() {
+      getListData({
+        businesstype: "CurrentCheck",
+        whereitems: [
+          {
+            key: "operatorcode",
+            value: this.operatorcode,
+          },
+        ],
+      }).then((res) => {
+        if (!res.data.result) return;
+        let data = res.data.result;
+        this.tableData = data.combineitems;
+        this.combinecount = data.combinecount;
+        this.notcompletecount = data.notcompletecount;
+        this.completecount = data.completecount;
+      });
+      getListData({
+        businesstype: "OutUserInfo",
+        code: this.operatorcode,
+        whereitems: [],
+      }).then((res) => {
+        res.data.result && (this.userform = res.data.result);
+      });
+      getListData({
+        businesstype: "MyCheckPersonList",
+        code: this.operatorcode,
+        whereitems: [],
+      }).then((res) => {
+        res.data.result && (this.commonList = res.data.result);
+      });
+    },
+    // 跳转订单列表
+    handleJumpOrderList(status) {
+      this.$router.push({ path: "/orderListPage", query: { status } });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.personalCenter {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 5px;
+  .usermainbody {
+    background-color: #fff;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    .userbox {
+      width: 100%;
+      min-height: 50px;
+      font-size: 12px;
+      .userlog {
+        padding: 10px 10px 10px 20px;
+      }
+      .usermsg {
+        font-size: 14px;
+        div {
+          margin: 5px 0;
+        }
+      }
+    }
+  }
+  .mainbody {
+    height: 100%;
+    background-color: #fff;
+    border-radius: 5px;
+
+    .top_box {
+      //   height: 45px;
+      box-sizing: border-box;
+      padding-left: 10px;
+
+      .title {
+        display: flex;
+        align-items: center;
+        height: 30px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .link_box {
+        display: flex;
+        // margin-top: 10px;
+        box-sizing: border-box;
+        padding-right: 10px;
+        .link_item {
+          text-align: center;
+          flex: 1;
+          .link_icon {
+            width: 42px;
+            height: 42px;
+          }
+          .text {
+            margin-top: 4px;
+          }
+        }
+      }
+    }
+    .commonBox {
+      font-size: 14px;
+      .title {
+        font-size: 16px;
+        font-weight: bold;
+        padding: 10px 0 0 10px;
+      }
+      .listOfUsersBox {
+        padding-left: 10px;
+        display: flex;
+        overflow: hidden;
+        li {
+          padding: 10px;
+        }
+      }
+    }
+    .content {
+      box-sizing: border-box;
+      padding: 10px;
+      .title {
+        display: flex;
+        align-items: center;
+        height: 30px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .table_box {
+        height: 240px;
+        .el-table {
+          //   height: 100%;
+        }
+      }
+      .table_mess {
+        margin-top: 12px;
+        box-sizing: border-box;
+        padding: 10px;
+        display: flex;
+        color: #000;
+        font-size: 14px;
+        // justify-content: space-between;
+        > div {
+          width: 32%;
+          text-align: center;
+        }
+      }
+    }
+    .btn_bom {
+      width: 100%;
+      text-align: center;
+      .van-button {
+        width: 70%;
+      }
+    }
+  }
+}
+</style>

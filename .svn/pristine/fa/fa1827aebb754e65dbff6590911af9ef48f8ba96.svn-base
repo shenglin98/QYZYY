@@ -1,0 +1,607 @@
+<template>
+  <div class="setmealdetails">
+    <div class="mainbody">
+      <!-- banner -->
+      <!-- <van-image v-if="banner" class="banner" :src="banner" /> -->
+      <div class="bannerbox">
+        <van-image
+          class="sexImg"
+          :src="sex == 1 ? manUrl : sex == 2 ? womanUrl : unknownUrl"
+        />
+        <div class="sextitle">{{ setmealname || "" }}</div>
+      </div>
+      <!-- 注意事项 -->
+      <div class="warnthing">
+        <div class="warnthing_title">
+          <div class="text">注意事项</div>
+          <van-image class="warning" :src="warning" />
+        </div>
+        <van-collapse v-model="activeNames">
+          <van-collapse-item :title="remindTitle" name="1" :value="remindCount">
+            <div v-html="remindContent"></div>
+          </van-collapse-item>
+        </van-collapse>
+      </div>
+      <!-- 日期选择 -->
+      <!-- <div class="calendar">
+        <div class="calendar_title">查看预约日期</div>
+        <div class="calendar_box">
+          <van-notice-bar
+            left-icon="warning"
+            text="日期仅供参考日期仅供参考日期仅供参考日期仅"
+          />
+          <div class="calendar_list">
+            <div class="calendar_roll">
+              <div
+                class="calendar_item"
+                v-for="(item, index) in calendarData"
+                :key="index"
+              >
+                <div class="week">{{ item.titleweekday }}</div>
+                <div class="date">{{ item.titleday }}</div>
+                <div class="today">{{ item.friendlydate }}</div>
+                <div class="is_reserv">{{ item.contentvalue }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> -->
+      <!-- 套餐信息 -->
+      <van-tabs
+        class="setmeal_mess"
+        v-model="activeTabs"
+        swipeable
+        color="#409eff"
+        title-active-color="#409eff"
+      >
+        <van-tab title="套餐项目">
+          <div class="setmeal_title">套餐项（{{ setmealcombincount }}项）</div>
+          <div
+            class="setmeal_box"
+            v-for="item in combineitems"
+            :key="item.combinecode"
+          >
+            <div class="setmeal_name">{{ item.combinename }}</div>
+            <div class="setmeal_remark" v-if="item.purpose">
+              {{ item.purpose }}
+            </div>
+          </div>
+        </van-tab>
+        <van-tab title="套餐简介">
+          <div v-html="setmealdes"></div>
+        </van-tab>
+        <van-tab title="套餐须知">
+          <div v-html="setmealwarnmsg"></div>
+        </van-tab>
+      </van-tabs>
+      <!-- 底部支付信息 -->
+      <div class="footer">
+        <div class="footer_text">
+          <div class="f_text">共{{ setmealcombincount }}个项目</div>
+          <div class="f_price" v-if="personalflag == 0">
+            <span class="title">个人支付:</span>
+            <span class="price">￥{{ setmealprice }}</span>
+          </div>
+        </div>
+        <div>
+          <van-button round type="info" size="small" @click="handleNextStep"
+            >我要加项</van-button
+          >
+          <van-button
+            round
+            type="info"
+            size="small"
+            @click="handleNowReservation"
+            >立即预约</van-button
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import {
+  getListData,
+  timeStatic,
+  TimeStaticForPerson,
+} from "@/api/reservation.js";
+import { getFiles } from "@/api/unit.js";
+
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      banner: "",
+      warning: require("@/assets/images/warning.png"),
+      manUrl: require("@/assets/images/man.png"),
+      womanUrl: require("@/assets/images/woman.png"),
+      unknownUrl: require("@/assets/images/unknownUrl.jpg"),
+      activeNames: [],
+      calendarData: [],
+      chooseDate: "",
+      activeTabs: 0,
+      setmealcode: "",
+      remindTitle: "",
+      remindContent: "",
+      remindCount: "0项",
+      combineitems: [],
+      setmealdes: "", // 套餐简介
+      setmealwarnmsg: "", // 套餐须知
+      setmealprice: 0,
+      setmealcombincount: 0,
+      personalflag: "",
+      setmealInfo: null,
+      sex: 0,
+      setmealname: "",
+      userData: "",
+    };
+  },
+
+  mounted() {
+    this.personalflag = localStorage.getItem("personalflag") || "";
+    if (this.personalflag == 0) {
+      this.setmealcode = this.$route.query.setmealcode || "";
+      if (!this.setmealcode) {
+        this.$router.push("/reservation");
+        return;
+      }
+      this.handleGetPageData();
+    } else {
+      let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.userData = JSON.parse(localStorage.getItem("companyUserInfo")) || "";
+      this.setmealInfo = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      if (!data) return;
+      data.setmealurl && (this.banner = data.setmealurl);
+      // 注意事项
+      if (data.setmealreminditems.length > 0) {
+        this.remindCount = `${data.setmealreminditems.length}项`;
+        this.remindTitle = data.setmealreminditems[0];
+        data.setmealreminditems.forEach((k) => {
+          this.remindContent += `${k}<br/>`;
+        });
+      }
+      this.combineitems = data.combineitems;
+      this.setmealprice = data.setmealprice;
+      this.sex = data.sex;
+      this.setmealname = data.setmealname;
+      this.setmealcombincount = data.setmealcombincount;
+      this.setmealdes = data.setmealdes;
+      // this.setmealwarnmsg = data.setmealwarnmsg;
+      for (let i = 0; i < data.combineitems.length; i++) {
+        if (
+          !data.combineitems[i].remind.includes("非空腹检查项目") &&
+          data.combineitems[i].remind.includes("空腹检查项目")
+        ) {
+          this.setmealwarnmsg += `${data.combineitems[i].combinename}（${data.combineitems[i].remind}）<br/>`;
+        }
+      }
+    }
+    // this.personalflag != "" && this.handleCheckDateShow();
+  },
+
+  methods: {
+    // 立即预约
+    handleNowReservation() {
+      this.$router.push({
+        path: "/projectConfirm",
+        query: {
+          setmealcode: this.setmealcode,
+          combineitems: encodeURIComponent(JSON.stringify([])),
+        },
+      });
+    },
+    // 点击选择日期回调
+    handleCheckDateShow() {
+      let data = null;
+      if (this.personalflag == 0) {
+        TimeStaticForPerson({ setmealcode: this.setmealcode })
+          .then((res) => {
+            this.calendarData = res.data.result.dateitems;
+          })
+          .catch(() => {
+            this.$toast.success("没有符合的预约日期!");
+          });
+      } else {
+        data = {
+          personflag: this.personalflag,
+          companycode: this.userData.companycode,
+          batch: this.userData.batch,
+        };
+        // personflag 0-个人  1-单位
+        timeStatic(data)
+          .then((res) => {
+            this.calendarData = res.data.result.dateitems;
+          })
+          .catch(() => {
+            // this.$toast.success("获取日期失败!");
+          });
+      }
+    },
+    handleNextStep() {
+      if (this.personalflag == 0) {
+        this.$router.push({
+          path: "/freeProject",
+          query: { setmealcode: this.setmealcode },
+        });
+      } else {
+        if (this.setmealInfo.grouptype == 0) {
+          this.$router.push({
+            path: "/projectConfirm",
+            query: {
+              setmealcode: this.setmealInfo.setmealcode,
+              combineitems: encodeURIComponent(JSON.stringify([])),
+            },
+          });
+        } else {
+          let data = this.userData.recommendgroupitem || this.userData;
+          if (!data.chooseruleexpress) {
+            this.$router.push({ path: "/freeProject" });
+          } else {
+            this.$router.push({ path: "/selfselection" });
+          }
+        }
+      }
+      // if(this.remindContent){
+      // this.$dialog
+      //   .alert({
+      //     title: "注意事项",
+      //     message: this.remindContent,
+      //     confirmButtonText: "我知道了",
+      //     confirmButtonColor: "#1989fa",
+      //   })
+      //   .then(() => {
+      //     // on confirm
+      //     if (this.personalflag == 0) {
+      //       this.$router.push({
+      //         path: "/freeProject",
+      //         query: { setmealcode: this.setmealcode },
+      //       });
+      //     } else {
+      //       if (this.setmealInfo.grouptype == 0) {
+      //         this.$router.push({
+      //           path: "/projectConfirm",
+      //           query: {
+      //             setmealcode: this.setmealInfo.setmealcode,
+      //             combineitems: encodeURIComponent(JSON.stringify([])),
+      //           },
+      //         });
+      //       } else {
+      //         this.$router.push({ path: "/freeProject" });
+      //       }
+      //     }
+      //   })
+      //   .catch(() => {
+      //     // on cancel
+      //   });
+      // }else{
+      //   if (this.personalflag == 0) {
+      //       this.$router.push({
+      //         path: "/freeProject",
+      //         query: { setmealcode: this.setmealcode },
+      //       });
+      //     } else {
+      //       if (this.setmealInfo.grouptype == 0) {
+      //         this.$router.push({
+      //           path: "/projectConfirm",
+      //           query: {
+      //             setmealcode: this.setmealInfo.setmealcode,
+      //             combineitems: encodeURIComponent(JSON.stringify([])),
+      //           },
+      //         });
+      //       } else {
+      //         this.$router.push({ path: "/freeProject" });
+      //       }
+      //     }
+      // }
+    },
+    // 排序渲染
+    reduceGroup(lists, index) {
+      // rv为累加器，current为对象数组中的每一项即是一个对象
+      return lists.reduce((rv, current) => {
+        (rv[current[index]] = rv[current[index]] || []).push(current);
+        return rv;
+      }, {});
+    },
+    reduceSort(arys) {
+      //先用Object内置类的keys方法获取要排序对象的属性名，再利用Array原型上的sort方法对获	取的属性名进行排序，newkey是一个数组
+      var newkey = Object.keys(arys).sort();
+      //console.log('newkey='+newkey);
+      var newObj = {}; //创建一个新的对象，用于存放排好序的键值对
+      for (var i = 0; i < newkey.length; i++) {
+        //遍历newkey数组
+        newObj[newkey[i]] = arys[newkey[i]]; //向新创建的对象中按照排好的顺序依次增加键值对
+      }
+      return newObj; //返回排好序的新对象
+    },
+    // 获取当前页面数据
+    handleGetPageData() {
+      getListData({
+        businesstype: "SetmealDetail",
+        code: this.setmealcode,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data) return;
+        data.setmealurl && (this.banner = data.setmealurl);
+        // 注意事项
+        if (data.setmealreminditems.length > 0) {
+          this.remindCount = `${data.setmealreminditems.length}项`;
+          this.remindTitle = data.setmealreminditems[0];
+          data.setmealreminditems.forEach((k) => {
+            this.remindContent += `${k}<br/>`;
+          });
+        }
+        let temp1 = this.reduceSort(
+          this.reduceGroup(data.combineitems, "resulttype")
+        );
+        let sortArr = [];
+        for (const key in temp1) {
+          let temp = this.reduceSort(this.reduceGroup(temp1[key], "deptcode"));
+          for (const keySon in temp) {
+            sortArr.push(
+              ...temp[keySon].sort(function (a, b) {
+                return a.seqno - b.seqno;
+              })
+            );
+          }
+        }
+        this.combineitems = sortArr;
+        // this.combineitems = data.combineitems;
+        this.setmealprice = data.setmealprice;
+        this.setmealcombincount = data.setmealcombincount;
+        this.setmealdes = data.setmealdes;
+        this.sex = data.sex;
+        this.setmealname = data.setmealname;
+        // this.setmealwarnmsg = data.setmealwarnmsg;
+        for (let i = 0; i < data.combineitems.length; i++) {
+          if (
+            !data.combineitems[i].remind.includes("非空腹检查项目") &&
+            data.combineitems[i].remind.includes("空腹检查项目")
+          ) {
+            this.setmealwarnmsg += `${data.combineitems[i].combinename}（${data.combineitems[i].remind}）<br/>`;
+          }
+        }
+        data.fileid2 &&
+          getFiles({ ic: data.fileid2 }).then((res) => {
+            console.log(res.data);
+          });
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.setmealdetails {
+  width: 100%;
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  position: relative;
+  .mainbody {
+    overflow-y: auto;
+    height: calc(100vh - 94px);
+    box-sizing: border-box;
+    padding-bottom: 50px;
+  }
+  .mainbody::-webkit-scrollbar {
+    display: none;
+  }
+  .banner {
+    width: 100%;
+  }
+  .bannerbox {
+    width: 100%;
+    height: 120px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .sexImg {
+      width: 90px;
+      height: 90px;
+    }
+    .sextitle {
+      min-width: 240px;
+      font-size: 16px;
+      font-weight: 600;
+      height: 80px;
+      background-color: #f2f2f2;
+      border-radius: 6px;
+      box-sizing: border-box;
+      padding: 6px;
+      margin-left: 15px;
+    }
+  }
+  .warnthing {
+    // min-height: 80px;
+    background-color: #fff;
+    margin-top: 2px;
+    padding: 8px;
+    .warnthing_title {
+      display: flex;
+      align-items: center;
+      padding-bottom: 8px;
+      //   padding: 8px;
+      border-bottom: 1px solid #d8d8d8;
+      .text {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .warning {
+        width: 18px;
+        height: 18px;
+        margin-left: 8px;
+      }
+    }
+  }
+  .calendar {
+    height: 140px;
+    background-color: #fff;
+    margin-top: 5px;
+    padding: 8px;
+    .calendar_box {
+      .van-notice-bar {
+        height: 22px;
+        padding: 0 8px;
+      }
+    }
+    .calendar_list::-webkit-scrollbar {
+      display: none;
+    }
+    .calendar_list {
+      height: 80px;
+      margin-top: 8px;
+      overflow-x: auto;
+
+      .calendar_roll {
+        height: 100%;
+        display: flex;
+        .calendar_item {
+          flex-shrink: 0;
+          background-color: #f2f2f2;
+          border-radius: 4px;
+          height: 100%;
+          width: 70px !important;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          margin-right: 8px;
+          .week {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+          }
+          .date {
+            font-size: 14px;
+            color: #676767;
+            margin: 5px 0;
+          }
+          .today {
+            font-size: 14px;
+            color: #27a7e0;
+          }
+          .is_reserv {
+            font-size: 14px;
+            font-weight: 600;
+            color: #27a7e0;
+          }
+        }
+        .calendar_bgl {
+          background-color: #409eff !important;
+          .week,
+          .date,
+          .today,
+          .is_reserv {
+            color: #fff !important;
+          }
+        }
+      }
+    }
+    .calendar_title {
+      font-size: 16px;
+      font-weight: 600;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #d8d8d8;
+    }
+  }
+  .setmeal_mess {
+    margin-top: 5px;
+
+    .van-tab__pane {
+      background-color: #fff;
+      padding: 20px;
+    }
+    .setmeal_title {
+      height: 32px;
+      background-color: #f2f2f2;
+      display: flex;
+      font-size: 16px;
+      font-weight: 600;
+      align-items: center;
+      justify-content: center;
+    }
+    .setmeal_box {
+      .setmeal_name {
+        height: 32px;
+        background-color: #fff;
+        display: flex;
+        font-size: 14px;
+        font-weight: 600;
+        align-items: center;
+      }
+      .setmeal_remark {
+        min-height: 32px;
+        background-color: #f2f2f2;
+        display: flex;
+        font-size: 14px;
+        color: #676767;
+        align-items: center;
+        padding: 5px 20px;
+        box-sizing: border-box;
+      }
+    }
+  }
+  .footer {
+    width: 100%;
+    box-sizing: border-box;
+    height: 45px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    justify-content: space-between;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    .van-button {
+      width: 85px;
+    }
+    .footer_text {
+      .f_text {
+        color: #061b1d;
+      }
+      .f_price {
+        font-weight: 600;
+        font-size: 16px;
+        .text {
+          color: #073237;
+        }
+        .price {
+          color: red;
+        }
+      }
+    }
+  }
+}
+// @import url("./css/index.scss");
+</style>
+<style lang="scss">
+.setmeal_mess {
+  .van-tab__text {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+}
+.van-collapse {
+  .van-collapse-item {
+    .van-cell {
+      padding: 0;
+      padding-top: 8px;
+      .van-cell__title {
+        flex: unset;
+        width: 75% !important;
+      }
+      .van-cell__value {
+        flex: unset;
+        width: 20% !important;
+      }
+    }
+  }
+}
+</style>

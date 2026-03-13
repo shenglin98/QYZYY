@@ -1,0 +1,115 @@
+import * as http from '@/utils/http'
+let api_str = location.pathname;
+export default {
+    /**
+     * 体检号、身份证、手机号、体检号获取历史信息
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    GetCustomerRegisterList(params) {
+        return http.get(`/api/CustomerRegister/GetCustomerRegisterList?keyword=${params.keyword}`, params)
+    },
+
+    /**
+     * 个人登记明细
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    CustomerRegisterDetail(params) {
+        return http.get(`/api/CustomerRegister/Detail?regid=${params.regid}`, params)
+    },
+
+    /**
+     * 体检预约假期列表
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    AppointmentTimeStatic(params) {
+        return http.get(`/api/Appointment/TimeStatic`, params)
+    },
+
+    /**
+     * 报告列表
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    ReportSearchReportList(params) {
+        return http.post(`/api/ReportSearch/ReportList`, params)
+    },
+
+    /**
+     * 报告书下载
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    ReportExportForBase64(params) {
+        return http.post(`/api/PrintReport/ReportExportForBase64`, params)
+    },
+
+    /**
+     * 所有检查
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    DepartCheckAllCheck(params) {
+        return http.get(`/api/DepartCheck/AllCheck?regid=${params.regid}`, params)
+    },
+
+    /**
+     * 个人预约保存
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    AppointmentSave(params) {
+        return http.post(`/api/Appointment/Save`, params)
+    },
+
+    /**
+     * 个人预约取消
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    AppointmentCancel(params) {
+        return http.post(`/api/Appointment/Cancel`, params)
+    },
+
+    /**
+     * 获取到个人所有报告详情
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    Report_details(params) {
+        return http.get(`/api/ReportSearch/ReportDetail?regid=${params.regid}`)
+    },
+
+    /**
+     * 获取到个人所有报告的总检
+     * @param  {Object} params 参数
+     * @return {Promise}
+     */
+    General_inspection(params) {
+        return http.post(`api/TotalCheck/Detail`, params)
+    },
+
+    /**
+     * 查看报告
+    //  * @param  {Object} params 参数
+    //  * @return {Promise}
+    //  */
+    View_report(params) {
+        return http.post(`api/PrintReport/ReportExportForBase64`, params)
+    },
+
+
+    // 总
+    HealthCheckForH5(data) {
+        // return http.post(`/api/HealthCheckForH5/Post`,data)
+        return http.post(api_str + `api/HealthCheckForH5/Post`, data)
+
+    },
+    getPersonalDetail(params) {
+        // return http.post(api_str +`/api/HealthCheckForH5/Post`,data)
+        return http.get(api_str + `api/HealthCheckForH5/CustomerDetail?regid=${params.regid}&customercode=${params.customercode}`, params)
+
+    },
+}

@@ -1,0 +1,61 @@
+/**
+ * 封装请求
+ */
+// import 'es6-promise/auto'
+
+import axios from 'axios'
+import diversion from './diversion'
+import { getToken } from './auth'
+import Vue from 'vue'
+import _ from 'lodash'
+import Cookies from 'js-cookie'
+
+let baseURL = '';
+if(process.env.NODE_ENV == 'production') {
+  baseURL = process.env.API_ROOT
+}
+function defaults () {
+  let token = '123456'
+  // console.log(token);
+  return {
+    baseURL: ``,
+    headers: {
+      'X-Token':"test123456789",
+      'LICENSE-KEY':"test123456789",
+      // 'X-Token':token,
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  }
+}
+
+function fetch (...args) {
+  const customOptions = args.pop()
+  const defaultOptions = defaults()
+  const method = args.shift()
+  const options = _.merge(defaultOptions, customOptions)
+
+  const res = diversion(() => axios[method](...args, options))
+  return new Promise((resolve, reject) => {
+    res.then((resolve)).catch((err) => {
+      console.log(err.response.status);
+      if(err.response.status == 700){
+        // Vue.prototype.$router.push('/login')
+        Vue.prototype.$message.error('请先登陆')
+      }else if(err.response.status == 500){
+        Vue.prototype.$message.error(`${err.response.data.msg}`)
+      }else{
+        Vue.prototype.$message.error(`${err.response.data.msg}`)
+        reject(err)        
+      }
+    })
+  })
+}
+
+export const get = (url, options) => fetch('get', url, options)
+
+export const post = (url, data, options) => fetch('post', url, data, options)
+
+export const put = (url, data, options) => fetch('put', url, data, options)
+
+export const del = (url, options) => fetch('delete', url, options)

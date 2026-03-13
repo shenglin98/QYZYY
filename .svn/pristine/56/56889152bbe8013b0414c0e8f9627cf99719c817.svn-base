@@ -1,0 +1,204 @@
+.subscribe{
+    width: 100%;
+    overflow-y: hidden;
+    background: #F2F2F2;
+    padding: 10px;
+    box-sizing: border-box;
+    .user_msg{
+        width: 100%;
+        background: #ffffff;
+        .medical_man{
+            width: 100%;
+            display: flex;
+            // justify-content: center;
+            // align-items: center;
+            padding: 18px 0;
+            div{
+                width: 102px;
+                height: 30px;
+                // background: #F2F2F2;
+                border-radius: 15px;
+                // text-align: center;
+                line-height: 30px;
+                font-size: 17.5px;
+                font-family: PingFangSC-Semibold, PingFang SC;
+                font-weight: 600;
+                color: #061B1D;
+                padding-left: 10px;
+            }
+        }
+        .message_box{
+            width: 100%;
+            .message_list{
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 15px;
+                font-family: PingFangSC-Regular, PingFang SC;
+                font-weight: 400;
+                border-bottom: 1px solid #D8D8D8;
+                padding: 15px 10px;
+                .parameter{
+                    color: #7C8586;
+                }
+            }
+        }
+        .data_box{
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 21px 10px;
+            box-sizing: border-box;
+            .data_left{
+                display: flex;
+                img{
+                    width: 20px;
+                    height: 20px;
+                }
+                span{
+                    padding-left: 5px;
+                    font-size: 15px;
+                    font-family: PingFangSC-Medium, PingFang SC;
+                    font-weight: 500;
+                    color: #061B1D;
+                }
+                div{
+                    font-size: 15px;
+                    font-family: PingFangSC-Regular, PingFang SC;
+                    font-weight: 400;
+                    color: #F30909;
+                    padding-left: 10px;
+                }
+            }
+            .data_right{
+                width: 100px;
+                height: 30px;
+                border-radius: 22px;
+                border: 1px solid #27A7E0;
+                font-size: 15px;
+                font-family: PingFangSC-Regular, PingFang SC;
+                font-weight: 400;
+                color: #27A7E0;
+                text-align: center;
+                line-height: 30px;
+            }
+            .time_msg{
+                span{
+                    font-size: 15px;
+                    font-family: PingFangSC-Medium, PingFang SC;
+                    font-weight: 500;
+                    color: #061B1D;
+                }
+            }
+        }
+    }
+    .medical_plan{
+        width: 100%;
+        background: #ffffff;
+        margin-top: 10px;
+        .package_title{
+            font-size: 18px;
+            font-family: PingFangSC-Medium, PingFang SC;
+            font-weight: 500;
+            color: #061B1D;
+            width: 100%;
+            // text-align: center;
+            padding: 15px 10px;
+        }
+        .package_name{
+            width: 100%;
+            height: 59px;
+            background: #C8EAF9;
+            border-radius: 2.5px;
+            font-size: 18px;
+            font-family: PingFangSC-Medium, PingFang SC;
+            font-weight: 500;
+            color: #061B1D;
+            text-align: center;
+            line-height: 59px;
+        }
+        .medical_project{
+            font-size: 18px;
+            font-family: PingFangSC-Medium, PingFang SC;
+            font-weight: 500;
+            color: #061B1D;
+            // text-align: center;
+            padding: 20px 10px;
+        }
+        .project_list{
+            width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
+            .list{
+                padding: 15px 0;
+                border-bottom: 1px solid #D8D8D8;
+                font-size: 15px;
+                font-family: PingFangSC-Regular, PingFang SC;
+                font-weight: 400;
+                color: #676767;
+            }
+        }
+    }
+    .timelist{
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        box-sizing: border-box;
+        padding: 0 10px;
+        .lister{
+            border: 1px solid #f3f3f3;
+            padding: 10px 10px;
+            border-radius: 30px;
+            margin-bottom: 10px;
+        }
+    }
+    .notice_box{
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+        background: #ffffff;
+        margin-top: 10px;
+        .notice_title{
+            width: 100%;
+            font-size: 18px;
+            font-family: PingFangSC-Semibold, PingFang SC;
+            font-weight: 600;
+            color: #061B1D;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #D8D8D8;
+            img{
+                margin: 3px 0 0 5px;
+            }
+        }
+        .notice_content{
+            padding: 15px 0;
+            font-size: 15px;
+            font-family: PingFangSC-Regular, PingFang SC;
+            font-weight: 400;
+            color: #676767;
+        }
+    }
+}
+// 修改框架样式
+/deep/{
+    .popup-box{
+        width: 90vw;
+    }
+    .nut-tab{
+        padding: 0 !important;
+    }
+    .nut-tab-active a{
+        color: #27A7E0;
+    }
+    .nut-title-nav-scroll{
+        min-width: 56px;     
+        padding: 0 0.2rem;
+        text-align: center;
+    }
+}

@@ -1,0 +1,224 @@
+/deep/ {
+    .nut-tab {
+        border: none;
+        padding: 0;
+    }
+    .nut-tab-title-leftnav {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .nut-tab-active a {
+        color: #27A7E0;
+    }
+    .nut-tab-link {
+        // white-space: nowrap;
+    }
+}
+
+.title {
+    height: 30px;
+    background: #27A7E0;
+    color: #fff;
+    text-align: center;
+    line-height: 30px;
+    font-size: 16px;
+}
+
+.summary {
+    height: 30px;
+    background: #f3e5d0;
+    // background: red;
+    color: #000;
+    line-height: 30px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+// .healthyonxs{
+//   width: 100%;
+//   height: 100% ;
+//   border: none !important;
+//   resize: none;
+//   cursor: pointer;
+// }
+.summary_conent {
+    min-height: 30px;
+    background: #f3e5d0;
+    color: #000;
+    line-height: 30px;
+    font-size: 14px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    white-space: pre-line;
+}
+
+.orderList {
+    display: flex;
+    width: 100%;
+    height: calc(100vh - 94px);
+    background-color: #f2f2f2;
+    //----
+    // margin-top: 10px;
+}
+
+.left_nav {
+    // position: absolute;
+    // position: fixed;
+    // top: 0;
+    // left: 0;
+    width: 110px !important;
+    text-align: center;
+    overflow-y: auto;
+    // background: #aa3d3d;
+}
+
+// .interval{
+//   width: 110px;
+//   height: 100px;
+//   background: #aa3d3d;
+// }
+.nospace {
+    white-space: nowrap;
+}
+
+.right_table {
+    width: 650px;
+    height: 100%;
+    overflow-y: auto;
+    // background: khaki;
+    // 添加。。。。
+    .tablefather {
+        width: 100%;
+        min-height: 300px;
+        // background: rgb(221, 140, 140);
+        .tableSON {
+            margin-top: 10px;
+            // textarea {
+            //   outline: none !important;
+            // }
+        }
+        .table_title {
+            width: 100% !important;
+            min-height: 30px !important;
+            line-height: 30px;
+            text-align: center;
+            background: #27a7e0;
+            color: #f4fafd;
+            font-size: 17px;
+        }
+    }
+    .General_inspection {
+        width: 100%;
+        min-height: 300px;
+        // background: rgb(223, 200, 200);
+        margin-top: 10px;
+        /deep/ .el-tabs__item.is-active {
+            color: #27a7e0 !important;
+        }
+        .healthyonn {
+            width: 100%;
+            min-height: 50px;
+            // background:#9cd3e9;
+            padding: 2px;
+            .healthyonx {
+                // border:none !important;
+                width: 100%;
+                height: 100%;
+                border: none !important;
+                resize: none;
+                cursor: pointer;
+                // background:#9cd3e9;
+            }
+        }
+        .healthyone {
+            width: 100%;
+            min-height: 75px;
+            background: #b4d0db;
+            margin-bottom: 10px;
+            .healthyt {
+                width: 100%;
+                min-height: 25px;
+                line-height: 26px;
+                color: #fff;
+                background: #27A7E0;
+                font-weight: bold;
+                // text-indent: 5px;
+                padding: 2px;
+            }
+            .healthye {
+                padding: 3px;
+                // width: 100%;
+                // height: 25px;
+                // line-height: 25px;
+                white-space: pre-line;
+            }
+        }
+    }
+}
+
+.nav_list {
+    background: #fff;
+    padding: 0px 0px 15px 0px;
+    .imgse {
+        width: 100%;
+    }
+}
+
+.active {
+    // background: #fff;
+    background: #d6d5d5;
+}
+
+.table {
+    table-layout: fixed;
+    border: none;
+    border-collapse: collapse;
+    background: white;
+    text-align: center;
+    // margin-top: 10px;
+    width: 100%;
+    thead {
+        tr {
+            color: white;
+            height: 30px;
+            .th {
+                background-color: #b3daf1;
+                min-width: 50px;
+                position: -webkit-sticky;
+                position: sticky;
+                top: 0;
+                z-index: 3;
+                //   border:1px solid rgba(0, 0, 0, 0.1);
+                text-align: center;
+                color: #000;
+            }
+            .ths {
+                background-color: #b3daf1;
+                min-width: 50px;
+                position: -webkit-sticky;
+                position: sticky;
+                top: 0;
+                z-index: 3;
+                //   border:1px solid rgba(0, 0, 0, 0.1);
+                text-align: center;
+                color: #000;
+            }
+            .thsone {
+                width: 30px;
+            }
+        }
+    }
+    tbody {
+        tr {
+            height: 30px;
+            td {
+                position: -webkit-sticky;
+                position: sticky;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                padding: 4px 0;
+            }
+        }
+    }
+}

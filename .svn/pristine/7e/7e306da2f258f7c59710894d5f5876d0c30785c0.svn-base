@@ -1,0 +1,108 @@
+import api from '../../api/index'
+
+export default {
+    components: {
+
+    },
+    data() {
+        return {
+            // idcard:'',
+            // name:'',
+            // password:'', 
+            // page:'1',
+            // limit:'999'
+            combination: [
+                // id:'',
+                // Physical :'',//体检号
+                // name:'',//名字
+                // gender:'',//性别
+                // expense:'9999',//费用
+                // registration:'',//登记日期
+                // examination:'',//体检日期
+                // state:'',//状态
+
+            ],
+            colorList: '',
+            keys: '', //查看是以什么方式请求
+            obj: '',
+        }
+    },
+    mounted() {
+        //  console.log(this.$route.query.obj,'this.$route.query.obj');
+        //  console.log(this.$route.query.obj.length,'this.$route.query.obj');
+        localStorage.removeItem('customercode');
+        this.obj = this.$route.query.obj
+        // if (this.obj.length == 18) { //身份证号
+        //     this.keys = 'idcard'
+        //     console.log('//身份证号');
+        // }
+        // if (this.obj.length == 11) { //手机号
+        //     this.keys = 'telephone'
+        //     console.log('//手机号');
+        // }
+        // if (this.obj.length == 10) { //体检号
+        //     this.keys = 'checkno'
+        //     console.log('//体检号');
+        // }
+        this.colorList = this.GLOBAL.colorList
+        this.acquire();
+    },
+    methods: {
+        async acquire() {
+            // const {data} = await api.home.ReportSearchReportList({
+                console.log(this.$route.query.obj);
+            const { data } = await api.home.HealthCheckForH5({
+                // page:this.page,
+                // limit:this.limit,
+                // whereitems:[
+                //     {
+                //         "key": "hiscode", 
+                //         "value": this.$route.query.obj
+                //     },
+                // ],
+                // -----------
+                // page: 0,
+                // limit: 0,
+                key: "",
+                id: "",
+                code: "",
+                type: 0,
+                tableName: "",
+                businesstype: 'CustomerReportList',
+                whereitems: [{
+                    key: 'name',
+                    value: this.$route.query.obj.name,
+                }, 
+                 {
+                    key: 'keyword',
+                    value: this.$route.query.obj.keyword,
+                }]
+            })
+
+            console.log(data, '返回的数据');
+            // this.combination = data.data;
+            this.combination = data.result;
+            this.GLOBAL.names = this.combination[0].name; //下载报告时会用到
+            console.log(this.combination[0].name, '改变全局变量里面的names下载报告时会用到');
+        },
+
+
+        // 跳转到订单详情 
+        async clickData(row, event, column) {
+            localStorage.setItem("currentData", JSON.stringify(row));
+            this.GLOBAL.codes = row.regid;
+            // console.log(row.regid,'row.regidrow.regidrow.regidrow.regidrow.regidrow.regidrow.regid');
+            this.GLOBAL.colorList = '体检结果'
+                // console.log(row,'单条用户列表数据');
+            localStorage.setItem('customercode', row.customercode)
+
+            this.$router.push({
+                path: '/orderMessage',
+                query: {
+                    'obj': row.regid
+                }
+            })
+
+        },
+    },
+}

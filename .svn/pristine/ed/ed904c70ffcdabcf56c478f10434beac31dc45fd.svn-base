@@ -1,0 +1,419 @@
+<template>
+  <div class="orderConfirm">
+    <van-pull-refresh
+      v-model="isLoading"
+      @refresh="handleRefreshPage"
+      success-text="刷新成功"
+    >
+      <!-- 头部支付信息 -->
+      <!-- <div class="hand_status">
+        <div class="head_title" v-if="orderMess.status == 0">支付未完成</div>
+        <div class="head_title" v-else>支付已完成</div>
+        <div class="head_price">订单总价：￥{{ orderMess.totalprice }}</div>
+      </div> -->
+      <!-- 个人信息 -->
+      <van-cell-group class="message_box">
+        <van-cell title="订单总价：" :value="orderMess.totalprice" />
+        <van-cell title="体检单位：" :value="orderMess.companyname" />
+        <van-cell
+          title="姓名证件："
+          :value="`${orderMess.name}(${orderMess.idcard})`"
+        />
+        <van-cell title="手机号码：" :value="orderMess.telephone" />
+        <van-cell title="体检日期：" :value="orderMess.checkdate" />
+        <van-cell title="体检地址：" :value="orderMess.address" />
+        <!-- 源-体检须知： -->
+        <van-cell title="注意事项：">
+          <template #default>
+            <div
+              class="link_look"
+              @click="handleShowDialog(textContent, '注意事项')"
+            >
+              点击查看
+            </div>
+          </template>
+        </van-cell>
+        <!-- <van-cell title="注意事项：">
+          <template #default>
+            <div
+              class="link_look"
+              @click="handleShowDialog(orderMess.setmealremind, '注意事项')"
+            >
+              点击查看
+            </div>
+          </template>
+        </van-cell> -->
+        <van-cell title="下单时间：" :value="orderMess.operatdate" />
+        <van-cell title="订单编号：">
+          <template #default>
+            <div class="code">{{ orderMess.regid }}</div>
+            <van-image
+              class="link_img"
+              :src="`data:image/png;base64,${orderMess.barcode}`"
+            />
+          </template>
+        </van-cell>
+      </van-cell-group>
+      <!-- 套餐信息 -->
+      <div class="project_box">
+        <!-- 套餐外项目 -->
+        <div class="combine_box">
+          <div class="title">套餐外项目（{{ combineitems.length }}）</div>
+          <van-cell-group>
+            <van-cell
+              v-for="item in combineitems"
+              :key="item.combinecode"
+              :value="item.combinename"
+            />
+          </van-cell-group>
+        </div>
+        <!-- 套餐内项目 -->
+        <div class="setmeal_box">
+          <div class="title">套餐内项目（{{ setmealitems.length }}）</div>
+          <van-cell-group>
+            <van-cell
+              v-for="item in setmealitems"
+              :key="item.combinecode"
+              :value="item.combinename"
+            />
+          </van-cell-group>
+        </div>
+      </div>
+      <!-- 底部按钮信息 -->
+    </van-pull-refresh>
+    <div class="footer">
+      <van-button
+        v-for="item in operateitems"
+        :key="item.code"
+        type="info"
+        size="small"
+        @click="handleClickOperate(item)"
+        >{{ item.name }}</van-button
+      >
+      <!-- <van-button type="info" size="small">继续支付</van-button>
+      <van-button type="info" size="small">取消预约</van-button> -->
+    </div>
+    <van-dialog
+      class="setmealwarnmsg_dia"
+      v-model="showDialog"
+      messageAlign
+      :title="showDialogTitle"
+    >
+      <div class="setmealwarnmsg">
+        <div class="warnmsg_content" v-html="dialogContent"></div>
+      </div>
+    </van-dialog>
+  </div>
+</template>
+<script>
+import {
+  getListData,
+  healthCheckForH5Post,
+  cancelAppoint,
+} from "@/api/reservation.js";
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      orderid: "",
+      isLoading: false,
+      orderUrl: require("@/assets/images/order.jpg"),
+      orderMess: {},
+      setmealitems: [],
+      combineitems: [],
+      operateitems: [],
+      showDialog: false, // 体检须知 // 注意事项
+      dialogContent: "",
+      showDialogTitle: "",
+      textContent: `<h2 style="font-family: 'Microsoft YaHei'; text-align: center;font-size:0.4rem;font-weight: 600;">健康体检注意事项</h2>
+<p style="font-family: 'Microsoft YaHei';">体检要求:</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp;您好，欢迎您来体检!体检前请您仔细阅读体检注意事项:</p>
+<h4 style="font-family: 'Microsoft YaHei';"><span style="color: #3598db;font-size:0.38rem;font-weight: 600;"><strong>一、体检前:</strong></span></h4>
+<p style="font-family: 'Microsoft YaHei';">（1）于体检前一天晚餐后，不再进食，以保证空腹8-10小时抽血检验。</p>
+<p style="font-family: 'Microsoft YaHei';">（2）体检前2～3日以清淡饮食为主，不吃高脂性及油炸性食物，禁食血制品及含铁量过高的食物（如猪血、鸡血、海带、菠菜等），避免剧烈运动，不饮酒或尽量少饮酒。</p>
+<p style="font-family: 'Microsoft YaHei';">（3）糖尿病、高血压、心脏病、哮喘等慢性病患者，请将平日服用的药物携带备用，受检日建议不要停药，可以在抽血前用少量白开水服用药物。14碳呼气试验1个月内不能服用消炎药。</p>
+<p style="font-family: 'Microsoft YaHei';">（4）受检者不宜化妆，检查时避免穿连衣裙、连裤袜等，不要佩戴金属饰物或携带贵重物品，以防丢失或影响检查。</p>
+<h4 style="font-family: 'Microsoft YaHei';"><span style="color: #3598db;font-size:0.38rem;font-weight: 600;">二、体检中:</span></h4>
+<p style="font-family: 'Microsoft YaHei';">（1）抽血检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;需空腹8&mdash;10小时。</p>
+<p style="font-family: 'Microsoft YaHei';">（2）X光检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; ① 女士请勿穿连衣裙，并取下文胸及有字母扣的衣服和项链、玉佩等饰品。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; ② 备孕者（男、女）和孕妇，应事先告知医护人员，勿做X光检查。</p>
+<p style="font-family: 'Microsoft YaHei';">（3）心电图检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;女士请勿穿连衣裙、连体袜，检查时需解开文胸。</p>
+<p style="font-family: 'Microsoft YaHei';">（4）彩超检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;① 腹部彩超需空腹（需空腹，可喝水） 。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;② 子宫附件彩超需膀胱充盈（憋尿），阴道彩超仅限已婚或有性生活史女性检查。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;③ 泌尿系彩超需膀胱充盈（憋尿） 。</p>
+<p style="font-family: 'Microsoft YaHei';">（5）尿常规检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;① 建议留取中段尿（女性月经期不宜留尿检查，待经期结束3-5天后再补检）。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;② 留尿前请到体检前台领取留尿管及尿杯，留尿时需留取2/3管并拧紧盖子，尿液标本放在卫生间门口标本架内。</p>
+<p style="font-family: 'Microsoft YaHei';">（6）妇科检查： （仅限已婚或有性生活史女性）</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;① 需排空小便，月经期不宜妇科检查，月经干净后3&mdash;5天检查。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;② 若同选阴道彩超和妇科检查者，应先检查妇科项目后再检查阴道彩超。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;③ 检查前一天禁止阴道用药，禁止同房。</p>
+<p style="font-family: 'Microsoft YaHei';">（7）血压检查：</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;应静坐10分钟以上，以免误差。</p>
+<h4 style="font-family: 'Microsoft YaHei';"><span style="color: #3598db;font-size:0.38rem;font-weight: 600;">三、体检后:</span></h4>
+<p style="font-family: 'Microsoft YaHei';">（1）全部项目检查完毕后请把导检单交回收单处，以便我们尽快整理和汇总体检报告。</p>
+<p style="font-family: 'Microsoft YaHei';">（2）请在单位结账之前完成体检，谢谢您的配合。</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp;</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp;</p>
+<p style="font-family: 'Microsoft YaHei';">&nbsp;</p>`,
+      // <p style="font-family: 'Microsoft YaHei'; text-align: right;">惠州市第六人民医院健康管理中心</p>
+    };
+  },
+
+  mounted() {
+    this.orderid = this.$route.query.orderid || "";
+    if (!this.orderid) {
+      this.$toast.success("获取订单编码!");
+      return;
+    }
+    this.handleGetListData(); // 获取订单详情接口返回
+  },
+
+  methods: {
+    handleRefreshPage() {
+      this.isLoading = true;
+      this.handleGetListData(); // 获取订单详情接口返回
+    },
+    // 取消预约接口
+    handleCancelAppoint() {
+      cancelAppoint([
+        `${this.orderMess.regid}-${localStorage.getItem("customercode")}`,
+      ]).then((res) => {
+        if (res.data.result) {
+          this.$toast.success(res.data.message);
+          this.$router.push({
+            path: "/orderListPage",
+          });
+          // this.handleGetListData(); // 获取订单详情接口返回
+        }
+      });
+    },
+    // 支付页面接口
+    handlePayInfo() {
+      healthCheckForH5Post({
+        businesstype: "PayInfo",
+        code: this.orderid,
+      }).then((res) => {
+        if (!res.data.result) return;
+        if (res.data.result.payUrl) {
+          window.open(res.data.result.payUrl);
+        } else {
+          this.$toast.success(res.data.message);
+          this.$router.push({ path: "/orderListPage" });
+        }
+      });
+    },
+    // 查看报告页面
+    handleCustomerReportDetail() {
+      this.$router.push({
+        path: "/orderMessage",
+        query: { obj: this.orderMess.regid },
+      });
+    },
+    // 点击操作按钮回调
+    handleClickOperate(item) {
+      console.log(item);
+      if (!item) return;
+      switch (item.code) {
+        case "PayInfo": // 支付页面
+          this.handlePayInfo();
+          break;
+        case "CancelAppoint": // 取消预约
+          this.handleCancelAppoint();
+          break;
+        case "CustomerReportDetail": // 查看报告
+          this.handleCustomerReportDetail();
+          break;
+        default:
+          break;
+      }
+    },
+    // 点击弹框回调
+    handleShowDialog(content, title) {
+      this.dialogContent = content;
+      this.showDialogTitle = title;
+      this.showDialog = true;
+    },
+    // 获取订单详情接口返回
+    handleGetListData() {
+      getListData({
+        businesstype: "OrderDetail",
+        code: this.orderid,
+        customercode: localStorage.getItem("customercode"),
+      })
+        .then((res) => {
+          this.$toast.success("加载完成");
+          this.isLoading = false;
+          this.orderMess = res.data.result;
+          this.operateitems = res.data.result.operateitems;
+          this.setmealitems = res.data.result.combineitems.filter((k) => {
+            return k.addflag == 0;
+          });
+          this.combineitems = res.data.result.combineitems.filter((k) => {
+            return k.addflag != 0;
+          });
+        })
+        .catch((err) => {
+          this.isLoading = false;
+        });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.orderConfirm {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 5px;
+  position: relative;
+
+  .van-pull-refresh::-webkit-scrollbar {
+    display: none;
+  }
+  .van-pull-refresh {
+    height: 100%;
+    background-color: #fff;
+    border-radius: 6px;
+    box-sizing: border-box;
+    padding: 8px;
+    overflow-y: auto;
+    .hand_status {
+      height: 60px;
+      border-bottom: 1px solid #d8d8d8;
+      .head_title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e6a23c;
+      }
+      .head_price {
+        margin-top: 8px;
+        font-size: 14px;
+      }
+    }
+    .message_box {
+      border-bottom: 1px solid #d8d8d8;
+    }
+    .project_box {
+      border-bottom: 1px solid #d8d8d8;
+      box-sizing: border-box;
+      padding-bottom: 60px;
+      .combine_box {
+        .title {
+          height: 38px;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: #000;
+          border-bottom: 1px solid #d8d8d8;
+          box-sizing: border-box;
+          padding-left: 10px;
+          position: relative;
+        }
+        .title::before {
+          content: "";
+          width: 5px;
+          height: 50%;
+          border-radius: 5px;
+          background-color: #e6a23c;
+          position: absolute;
+          left: 0;
+        }
+      }
+      .setmeal_box {
+        .title {
+          height: 38px;
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: #000;
+          border-bottom: 1px solid #d8d8d8;
+          box-sizing: border-box;
+          position: relative;
+          padding-left: 10px;
+        }
+        .title::before {
+          content: "";
+          width: 5px;
+          height: 50%;
+          border-radius: 5px;
+          background-color: #e6a23c;
+          position: absolute;
+          left: 0;
+        }
+      }
+    }
+  }
+  .footer {
+    width: 100%;
+    box-sizing: border-box;
+    height: 45px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    .van-button {
+      width: 80px;
+      margin-right: 10px;
+    }
+  }
+  .setmealwarnmsg_dia {
+    width: 320px;
+    .setmealwarnmsg {
+      width: 100%;
+      height: 300px;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 14px;
+      overflow: auto;
+      .warnmsg_content {
+        width: 100%;
+        height: 100%;
+        word-wrap: break-word;
+      }
+    }
+  }
+}
+</style>
+<style lang="scss">
+.orderConfirm {
+  .message_box {
+    .van-cell {
+      padding: 8px;
+      .van-cell__title {
+        flex: unset;
+        width: 28% !important;
+      }
+      .van-cell__value {
+        flex: unset;
+        width: 71% !important;
+        text-align: left;
+        .link_look {
+          color: #e6a23c;
+        }
+        .link_img {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+</style>

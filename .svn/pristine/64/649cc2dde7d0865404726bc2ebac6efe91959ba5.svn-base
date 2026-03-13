@@ -1,0 +1,998 @@
+<template>
+  <div class="freeproject">
+    <!-- 头部搜索 -->
+    <van-search
+      :disabled="chooseDept && chooseDept.deptcode == '10086'"
+      v-model="searchValue"
+      shape="round"
+      placeholder="搜索项目"
+    />
+    <div class="mainbody">
+      <!-- 侧边栏 -->
+      <div class="sidebar_box">
+        <van-sidebar v-model="activeKey" @change="handleChangeSidebar">
+          <van-sidebar-item v-for="item in listData" :key="item.deptcode">
+            <template #title>
+              <div class="temp_box">
+                <van-image
+                  class="title_icon"
+                  :src="`../../../static/image/${item.deptname}.png`"
+                />
+                <div class="title_name">{{ item.deptname }}</div>
+              </div>
+            </template>
+          </van-sidebar-item>
+        </van-sidebar>
+      </div>
+      <!-- 右侧选择项目内容 -->
+      <div class="project_box">
+        <!-- 自选项目 -->
+        <div
+          class="mbtop"
+          v-if="
+            chooseDept.deptcode == '10086' && pagedata && pagedata.length > 0
+          "
+        >
+          {{ pagedata[0].caption }}
+        </div>
+        <div class="select_box" v-if="chooseDept.deptcode == '10086'">
+          <div
+            class="for_box_self"
+            v-for="(item, index) in pagedata"
+            :key="index"
+          >
+            <div class="sbtitle">
+              <div class="sbtitletext">
+                {{ item.deptname }}
+              </div>
+              <div class="quanxuan">
+                <el-button
+                  type="primary"
+                  size="mini"
+                  @click="handleCheckAllChange(true, item)"
+                  >全选</el-button
+                >
+                <el-button
+                  type="warning"
+                  size="mini"
+                  @click="handleCheckAllChange(false, item)"
+                  >取消全选</el-button
+                >
+              </div>
+            </div>
+            <van-checkbox-group class="group_box" v-model="item.checkList">
+              <van-checkbox
+                v-for="(value, ind) in item.combinitems"
+                :key="ind"
+                :name="value.combinecode"
+                @click="handleChange"
+                label-position="left"
+                >{{ value.combinename }}</van-checkbox
+              >
+            </van-checkbox-group>
+          </div>
+        </div>
+        <!-- 正常项目 -->
+        <van-checkbox-group
+          v-else
+          v-model="selectArr"
+          @change="handleChangeProject"
+        >
+          <van-cell-group>
+            <van-cell
+              v-for="(item, index) in chooseDeptData"
+              clickable
+              :key="item.combinecode"
+              @click="handleToggle(index, item)"
+            >
+              <template #default>
+                <div class="cname">{{ item.combinename }}</div>
+                <div class="ctitle">{{ item.purpose }}</div>
+                <div class="cprice">费用：￥{{ item.price }}</div>
+              </template>
+              <template #right-icon>
+                <van-checkbox
+                  :name="item"
+                  ref="checkboxes"
+                  :disabled="checkArrBringOut.includes(item.combinecode)"
+                />
+              </template>
+            </van-cell>
+          </van-cell-group>
+        </van-checkbox-group>
+      </div>
+      <!-- 底部支付信息 -->
+      <div class="footer">
+        <div class="footer_text">
+          <!-- <van-image class="footer_icon" :src="priceUrl" /> -->
+          <div class="yixuan">
+            <div class="f_text">已选费用</div>
+            <div class="f_price">￥{{ checkPrice }}</div>
+          </div>
+          <div class="grzf" v-if="personalflag == 1">
+            <div class="f_text">个人支付</div>
+            <div class="f_price">￥{{ personPrice }}</div>
+          </div>
+          <div
+            class="dwde"
+            v-if="
+              personalflag == 1 &&
+              setmealInfo.grouptype == 2 &&
+              setmealInfo.quota
+            "
+          >
+            <div class="f_text">单位定额</div>
+            <div class="f_price">￥{{ quota }}</div>
+          </div>
+          <div class="xmhj" v-if="personalflag == 1">
+            <div class="f_text">项目合计</div>
+            <div class="f_price">￥{{ totalPrice }}</div>
+          </div>
+        </div>
+        <van-button round type="info" size="small" @click="handleReservation"
+          >立即预约</van-button
+        >
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import {
+  getSysConfigInfo,
+  getListData,
+  HealthCheckForH5,
+  CheckChooseRule,
+} from "@/api/reservation.js";
+
+export default {
+  name: "",
+
+  components: {},
+
+  computed: {
+    chooseDeptData() {
+      const search = this.searchValue;
+      if (search) {
+        return this.chooseDept.filter((data) => {
+          return Object.keys(data).some((key) => {
+            let containArr = ["combinename"];
+            if (containArr.includes(key)) {
+              return (
+                String(data[key]).toLowerCase().indexOf(search.toLowerCase()) >
+                -1
+              );
+            }
+          });
+        });
+      }
+      return this.chooseDept;
+    },
+    // 已选费用
+    aaacheckPrice() {
+      let price = 0;
+      if (this.personalflag == 0) {
+        this.selectArr.forEach((k) => {
+          price += +k.price;
+        });
+        return +price.toFixed(3);
+      } else {
+        if (
+          this.setmealInfo.grouptype == -1 ||
+          this.setmealInfo.grouptype == 1
+        ) {
+          this.selectArr.forEach((k) => {
+            price += +k.price;
+          });
+          return +price.toFixed(3);
+        } else if (this.setmealInfo.grouptype == 2) {
+          this.selectArr.forEach((k) => {
+            price += +k.price;
+          });
+          return +price.toFixed(3);
+        }
+
+        // if (this.setmealInfo.quota < price) {
+        //   let tempPrice = 0;
+        //   return +tempPrice.toFixed(3);
+        // } else {
+        //   return +price.toFixed(3);
+        // }
+      }
+    },
+    // 个人支付
+    aaapersonPrice() {
+      let price = 0;
+      if (this.personalflag == 0) {
+        this.selectArr.forEach((k) => {
+          price += +k.price;
+        });
+        return +price.toFixed(3);
+      } else if (this.personalflag == 1) {
+        if (this.setmealInfo.grouptype == -1) {
+          if (this.setmealInfo.addsettlementtype == 0) {
+            return +price.toFixed(3);
+          } else {
+            this.selectArr.forEach((k) => {
+              price += +k.price;
+            });
+            return +price.toFixed(3);
+          }
+        } else if (this.setmealInfo.grouptype == 1) {
+          if (this.setmealInfo.addsettlementtype == 0) {
+            return +price.toFixed(3);
+          } else {
+            this.selectArr.forEach((k) => {
+              price += +k.price;
+            });
+            return +price.toFixed(3);
+          }
+        } else if (this.setmealInfo.grouptype == 2) {
+          this.selectArr.forEach((k) => {
+            price += +k.price;
+          });
+          let rprice = +(
+            +this.setmealInfo.setmealprice +
+            +price -
+            +this.setmealInfo.quota
+          ).toFixed(3);
+          return rprice > 0 ? rprice : 0;
+        }
+      } else {
+        this.selectArr.forEach((k) => {
+          price += +k.price;
+        });
+        return +price.toFixed(3);
+      }
+    },
+    // 项目合计
+    aaatotolPrice() {
+      let price = 0;
+      if (this.personalflag == 1) {
+        this.selectArr.forEach((k) => {
+          price += +k.price;
+        });
+        return +(+this.setmealInfo.setmealprice + +price).toFixed(3);
+      } else {
+        this.selectArr.forEach((k) => {
+          price += +k.price;
+        });
+      }
+    },
+  },
+
+  data() {
+    return {
+      searchValue: "",
+      selectArr: [],
+      activeKey: 0,
+      items: [
+        { text: "浙江", children: [], icon: "like" },
+        { text: "江苏", children: [], badge: 5 },
+      ],
+      setmealcode: "",
+      listData: [],
+      chooseDept: [],
+      excludeArr: [],
+      imgUrl1: require("@/assets/images/肿瘤筛查项目.png"),
+      priceUrl: require("@/assets/images/药箱急救医疗.png"),
+      tempUrl: require("@/assets/images/其他项目.png"),
+      combineitems: [],
+      isBack: false,
+      personalflag: "",
+      setmealInfo: {},
+      companyUserInfo: null,
+      checkPrice: 0,
+      personPrice: 0,
+      quota: 0,
+      totalPrice: 0,
+      checkFlag: false,
+      checkArrContain: [],
+      checkArrBringOut: [],
+      listDataCombin: [],
+      currentData: [],
+      clickCombinecode: "",
+      clickFlag: true,
+      pagedata: [],
+      tempData: null,
+      allCombine: [],
+      selfdata: "",
+    };
+  },
+
+  async mounted() {
+    this.personalflag = localStorage.getItem("personalflag") || "";
+    this.companyUserInfo =
+      JSON.parse(localStorage.getItem("companyUserInfo")) || null;
+    let data = this.$route.query || undefined;
+    data.isBack && (this.isBack = data.isBack);
+    if (data.combineitems) {
+      this.combineitems = JSON.parse(decodeURIComponent(data.combineitems));
+      this.currentData = JSON.parse(decodeURIComponent(data.combineitems));
+    }
+    if (this.personalflag == 0) {
+      this.setmealcode = data.setmealcode || "";
+      if (!this.setmealcode) {
+        this.$router.push("/setmealDetails");
+        return;
+      }
+      await getListData({
+        businesstype: "SetmealDetail",
+        code: this.setmealcode,
+      }).then((res) => {
+        let data = res.data.result;
+        this.currentData = data.combineitems;
+        this.excludeArr = data.combineitems.map((k) => {
+          return k.combinecode;
+        });
+      });
+    } else {
+      let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.setmealInfo = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.currentData = this.setmealInfo.combineitems;
+      this.setmealcode = data.setmealcode || "";
+      this.excludeArr = data.combineitems.map((k) => {
+        return k.combinecode;
+      });
+      // 是否展示自选项目
+      this.selfdata =
+        this.companyUserInfo.recommendgroupitem || this.companyUserInfo;
+      if (this.selfdata.chooseruleexpress) {
+        this.listData.push({
+          deptcode: "10086",
+          deptname: "自选项",
+        });
+        await this.handleGetPageData();
+      }
+    }
+    this.handleGetListData();
+    getSysConfigInfo({ cc: "Sys_H5SelectCTCombinTakeCTCost" }).then((res) => {
+      // 获取条件计算日期范围回调
+      if (!res.data.result) {
+        this.checkFlag = false;
+        return;
+      }
+      this.checkFlag = true;
+      this.checkArrContain = res.data.result.split("|")[0].split(",");
+      this.checkArrBringOut = res.data.result.split("|")[1].split(",");
+    });
+    console.log(this.currentData, "this.currentData");
+  },
+
+  methods: {
+    // 点击自选项目全选取消全选回调
+    handleCheckAllChange(ischeck, item) {
+      item.checkList = ischeck
+        ? item.combinitems.map((k) => k.combinecode)
+        : [];
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.selfdata.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    // 获取自选项目回调
+    handleGetPageData() {
+      HealthCheckForH5({
+        businesstype: "RuleCombineList",
+        whereitems: [
+          {
+            key: "groupid",
+            value: this.selfdata.groupid,
+          },
+        ],
+      }).then((res) => {
+        this.pagedata = res.data.result.map((v, k) => {
+          v.checkList = [];
+          return v;
+        });
+        res.data.result.forEach((k) => {
+          this.allCombine.push(...k.combinitems);
+        });
+        this.$nextTick(() => {
+          if (this.isBack) {
+            // let mapArr = this.combineitems.map((k) => {
+            //   return k.combinecode;
+            // });
+            // for (let i = 0; i < mapArr.length; i++) {
+            //   for (let j = 0; j < this.pagedata.length; j++) {
+            //     let flag = this.pagedata[j].combinitems.filter(
+            //       (val) => mapArr[i] == val.combinecode
+            //     )[0];
+            //     if (flag) {
+            //       this.pagedata[j].checkList.push(flag.combinecode);
+            //     }
+            //   }
+            // }
+            this.pagedata =
+              JSON.parse(localStorage.getItem("deedbackData")) || [];
+            this.tempData =
+              JSON.parse(localStorage.getItem("deedbackData")) || [];
+          }
+        });
+      });
+    },
+    handleChange(e, value, index) {
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList && k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.selfdata.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (!data.ismatch) {
+          this.$toast.fail(data.msg);
+          this.pagedata = JSON.parse(JSON.stringify(this.tempData));
+          // for (let i = 0; i < this.pagedata.length; i++) {
+          //   let index = this.pagedata[i].checkList.findIndex(
+          //     (k) => k == value[value.length - 1]
+          //   );
+          //   index > -1 && this.pagedata[i].checkList.splice(index, 1);
+          // }
+        } else {
+          this.tempData = JSON.parse(JSON.stringify(this.pagedata));
+        }
+      });
+    },
+    // 获取价格接口回调
+    handleGetPriceItems() {
+      let whereitems = [];
+      let combinecodes = this.selectArr.map((k) => {
+        return k.combinecode;
+      });
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+      } else {
+        whereitems.push({
+          key: "regid",
+          value: this.companyUserInfo.regid,
+        });
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+        whereitems.push({
+          key: "companycode",
+          value: this.companyUserInfo.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.companyUserInfo.batch,
+        });
+        whereitems.push({
+          key: "groupcode",
+          value: this.companyUserInfo.groupcode,
+        });
+      }
+      getListData({
+        businesstype: "CostInfo",
+        whereitems,
+      }).then((res) => {
+        if (!res.data.result) return;
+        let data = res.data.result;
+        this.checkPrice = data.checkPrice;
+        this.personPrice = data.personPrice;
+        this.quota = data.quota;
+        this.totalPrice = data.totalPrice;
+      });
+    },
+    // 立即预约回调
+    handleReservation() {
+      if (this.personalflag == 1 && this.quota > 0 && this.personPrice > 0) {
+        this.$dialog
+          .alert({
+            title: "注意事项",
+            message: `当前订单额度超出￥${this.personPrice}，请调整项目后再进行预约`,
+            confirmButtonText: "我知道了",
+            confirmButtonColor: "#1989fa",
+          })
+          .then(() => {})
+          .catch(() => {
+            // on cancel
+          });
+      } else {
+        if (this.selfdata.chooseruleexpress) {
+          this.handleNowReservation();
+        } else {
+          this.$router.push({
+            path: "/projectConfirm",
+            query: {
+              setmealcode: this.setmealcode,
+              combineitems: encodeURIComponent(JSON.stringify(this.selectArr)),
+            },
+          });
+        }
+      }
+    },
+    handleNowReservation() {
+      let rulecombines = this.pagedata
+        .map((k) => {
+          k.checkList = k.checkList.filter((val) => val);
+          return k.checkList.length > 0
+            ? `${k.deptcode}:${k.checkList.join("|")}`
+            : "";
+        })
+        .filter((k) => k);
+      CheckChooseRule({
+        groupid: this.selfdata.groupid,
+        rulecombines,
+      }).then((res) => {
+        let data = res.data.result;
+        if (data.allowSubmit) {
+          if (data.dialogWarn) {
+            this.$dialog
+              .alert({
+                title: "自选注意事项",
+                message: `${data.dialogWarn}`,
+                confirmButtonText: "确定",
+                confirmButtonColor: "#1989fa",
+              })
+              .then(() => {
+                this.handleNowReservationSS();
+              })
+              .catch(() => {});
+          } else {
+            this.handleNowReservationSS();
+          }
+        } else {
+          this.$toast.fail("必须选中自选项目!");
+        }
+      });
+    },
+    handleNowReservationSS() {
+      let selectCode = [];
+      let combineitems = [];
+      for (let index = 0; index < this.pagedata.length; index++) {
+        if (this.pagedata[index].checkList.length > 0) {
+          selectCode.push(...this.pagedata[index].checkList);
+        }
+      }
+      if (selectCode.length > 0) {
+        combineitems = this.allCombine.filter((k) => {
+          return selectCode.includes(k.combinecode);
+        });
+      }
+      localStorage.setItem("deedbackData", JSON.stringify(this.pagedata));
+      this.$router.push({
+        path: "/projectConfirm",
+        query: {
+          setmealcode: this.setmealcode,
+          combineitems: encodeURIComponent(JSON.stringify(this.selectArr)),
+          selfcombineitems: encodeURIComponent(JSON.stringify(combineitems)),
+        },
+      });
+      // this.$router.push({
+      //   path: "/projectConfirm",
+      //   query: {
+      //     setmealcode: this.setmealcode,
+      //     combineitems: encodeURIComponent(JSON.stringify(combineitems)),
+      //   },
+      // });
+    },
+    handleChangeProject(arr) {
+      // arr 勾选数据
+      // this.checkArrContain  配置左边包含数据
+      // this.checkArrBringOut  配置右边需要带出材料费
+      // this.listDataCombin  组合集合
+      // let arr = JSON.parse(JSON.stringify(arr1));
+      // if (
+      //   arr.findIndex((t) => this.checkArrContain.includes(t.combinecode)) > -1
+      // ) {
+      //   var tempArr = this.listDataCombin.findIndex((t) =>
+      //     this.checkArrBringOut.includes(t.combinecode)
+      //   );
+
+      //   if (tempArr > -1) {
+      //     arr.push(this.listDataCombin[tempArr]);
+      //   }
+      // }
+
+      let tipsArr = [];
+      let flag = arr.filter((k) => k.combinecode === this.clickCombinecode)[0];
+      if (flag && flag.rejectcombineitems && this.clickFlag) {
+        let temp = [...this.currentData, ...arr];
+        for (let i = 0; i < flag.rejectcombineitems.length; i++) {
+          let resFlag = temp.filter(
+            (k) => k.combinecode === flag.rejectcombineitems[i].combinecode
+          )[0];
+          resFlag && tipsArr.push(resFlag);
+          // resFlag && tipsArr.push(flag.rejectcombineitems[i]);
+        }
+        if (tipsArr.length > 0) {
+          let tipsName = tipsArr.map((k) => {
+            return k.combinename;
+          });
+          this.$dialog
+            .alert({
+              title: "提醒",
+              confirmButtonText: "我知道了",
+              confirmButtonColor: "#1989fa",
+              message: `您当前选择的（${
+                flag.combinename
+              }）项目和（${tipsName.join(
+                "、"
+              )}）项目检查内容类似，无法选择该项目。`,
+              confirmButtonColor: "#1989fa",
+            })
+            .then(() => {
+              // on confirm
+              arr.splice(arr.length - 1, 1);
+            })
+            .catch(() => {
+              // on cancel
+              arr.splice(arr.length - 1, 1);
+            });
+          return;
+        }
+      }
+      // --------------------------
+      let isResidue = false;
+      for (let i = 0; i < arr.length; i++) {
+        let index = this.checkArrContain.findIndex((k) => {
+          return k == arr[i].combinecode;
+        });
+        index > -1 && (isResidue = true);
+      }
+      if (arr.length > 0 && !isResidue) {
+        for (let i = 0; i < arr.length; i++) {
+          for (let j = 0; j < this.checkArrBringOut.length; j++) {
+            if (arr[i].combinecode == this.checkArrBringOut[j]) {
+              arr.splice(i, 1, {});
+            }
+          }
+        }
+        this.selectArr = arr;
+      } else {
+        this.selectArr = arr;
+      }
+      if (this.checkFlag && arr.length > 0) {
+        let flag = false;
+        let tempArr = [];
+        for (let i = 0; i < arr.length; i++) {
+          if (this.checkArrContain.includes(arr[i].combinecode)) {
+            flag = true;
+          }
+        }
+        if (flag) {
+          tempArr = this.listDataCombin.filter((k) => {
+            return this.checkArrBringOut.includes(k.combinecode);
+          });
+          if (tempArr.length > 0) {
+            for (let i = 0; i < tempArr.length; i++) {
+              let index = arr.findIndex((k) => {
+                return k.combinecode == tempArr[i].combinecode;
+              });
+              index == -1 && arr.push(tempArr[i]);
+            }
+          }
+          this.selectArr = arr;
+        }
+      } else {
+        this.selectArr = arr;
+      }
+      this.handleGetPriceItems();
+      // let price = 0;
+      // for (let i = 0; i < arr.length; i++) {
+      //   price += +arr[i].price;
+      // }
+      // price += this.setmealInfo.setmealprice;
+      // if (this.setmealInfo.grouptype == 2 && this.setmealInfo.quota < price) {
+      //   this.$toast.fail("自选项目超出定额!");
+      //   arr.pop();
+      //   return;
+      // } else {
+      //   this.selectArr = arr;
+      // }
+    },
+    handleToggle(index, item) {
+      this.$refs.checkboxes[index].toggle(false);
+
+      if (!!item.dialogWarn && !this.$refs.checkboxes[index].checked) {
+        this.$dialog
+          .confirm({
+            message: item.dialogWarn,
+            confirmButtonText: "同意",
+            cancelButtonText: "不同意",
+          })
+          .then(() => {
+            this.handleItemToggle(index, item);
+            this.$refs.checkboxes[index].toggle();
+          })
+          .catch(() => {
+            this.$refs.checkboxes[index].toggle(false);
+          });
+      } else {
+        this.handleItemToggle(index, item);
+        this.$refs.checkboxes[index].toggle();
+      }
+    },
+    handleItemToggle(index, item) {
+      this.clickCombinecode = this.$refs.checkboxes[index].name.combinecode;
+      this.clickFlag = !this.$refs.checkboxes[index].checked;
+    },
+    // 获取组合集合
+    handleGetListData() {
+      let whereitems = [];
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "sex",
+          value: 0,
+        });
+        // 个人
+      } else {
+        // 单位
+        whereitems.push({
+          key: "companycode",
+          value: this.companyUserInfo.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.companyUserInfo.batch,
+        });
+        whereitems.push({
+          key: "sex",
+          value: this.companyUserInfo.sex,
+        });
+      }
+      getListData({
+        businesstype: "CombineList",
+        whereitems,
+      }).then((res) => {
+        // this.listData = res.data.result;
+        let tempData = res.data.result;
+        for (let i = 0; i < tempData.length; i++) {
+          tempData[i].combinitems = tempData[i].combinitems.filter((k) => {
+            return !this.excludeArr.includes(k.combinecode);
+          });
+        }
+        tempData.forEach((k) => {
+          if (k.combinitems.length > 0) {
+            this.listDataCombin.push(...k.combinitems);
+          }
+        });
+        if (!this.selfdata.chooseruleexpress) {
+          this.chooseDept = tempData[0].combinitems.filter((k) => {
+            return !this.excludeArr.includes(k.combinecode);
+          });
+        } else {
+          this.chooseDept = this.listData[0];
+        }
+        this.listData.push(...tempData);
+        // this.chooseDept = this.listData[0].combinitems.filter((k) => {
+        //   return !this.excludeArr.includes(k.combinecode);
+        // });
+        this.$nextTick(() => {
+          if (this.isBack) {
+            let mapArr = this.combineitems.map((k) => {
+              return k.combinecode;
+            });
+            tempData.forEach((item) => {
+              item.combinitems.forEach((k) => {
+                if (mapArr.includes(k.combinecode)) {
+                  this.selectArr.push(k);
+                }
+              });
+            });
+          }
+          this.handleGetPriceItems();
+          console.log(this.selectArr);
+        });
+      });
+    },
+    // 切换tabs
+    handleChangeSidebar(index) {
+      if (this.selfdata.chooseruleexpress && index == 0) {
+        this.chooseDept = this.listData[0];
+      } else {
+        this.chooseDept = this.listData[index].combinitems.filter((k) => {
+          return !this.excludeArr.includes(k.combinecode);
+        });
+      }
+    },
+  },
+
+  watch: {},
+};
+</script>
+<style lang='scss' scoped>
+.freeproject {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  .mainbody {
+    height: calc(100vh - 149px);
+    padding-bottom: 50px;
+    box-sizing: border-box;
+    display: flex;
+    position: relative;
+    .sidebar_box::-webkit-scrollbar {
+      display: none;
+    }
+    .sidebar_box {
+      width: 30%;
+      overflow-y: auto;
+      .van-sidebar {
+        width: 100%;
+        .van-sidebar-item {
+          padding: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .temp_box {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          .title_icon {
+            width: 40px;
+            height: 40px;
+          }
+          .title_name {
+            font-weight: 600;
+            color: #000;
+          }
+        }
+      }
+    }
+    .project_box::-webkit-scrollbar {
+      display: none;
+    }
+    .project_box {
+      width: 70%;
+      overflow-y: auto;
+      background-color: #fff;
+      .van-cell {
+        align-items: flex-start !important;
+        .cname {
+          font-size: 15px;
+          font-weight: 600;
+          color: #000;
+        }
+        .ctitle {
+          color: #969799;
+        }
+        .cprice {
+          color: #ffa113;
+        }
+      }
+      .mbtop {
+        font-weight: 600;
+        font-size: 16px;
+        min-height: 40px;
+        overflow-y: auto;
+        max-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e6effb;
+        padding: 5px;
+        box-sizing: border-box;
+      }
+      .select_box {
+        margin-top: 10px;
+        height: calc(100% - 120px);
+        box-sizing: border-box;
+        overflow-y: auto;
+        padding: 0 0 10px 10px;
+        .for_box_self {
+          margin-top: 10px;
+          .group_box {
+            margin-top: 5px;
+            .van-checkbox {
+              min-height: 35px;
+              border-top: 1px solid #f5f6f7;
+              display: flex;
+              box-sizing: border-box;
+              padding: 5px 20px 5px 10px;
+              justify-content: space-between;
+            }
+          }
+        }
+        .sbtitle {
+          font-weight: 600;
+          font-size: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-sizing: border-box;
+          padding-right: 20px;
+          .quanxuan {
+            margin-left: 10px;
+          }
+        }
+        .sbcheck_box {
+          padding: 0 0 0 10px;
+          display: flex;
+          flex-direction: column;
+          .sbcheckbox {
+            margin: 8px 0;
+          }
+        }
+      }
+    }
+    .footer {
+      width: 100%;
+      box-sizing: border-box;
+      height: 45px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      justify-content: space-between;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      .van-button {
+        width: 24%;
+      }
+      .footer_text {
+        display: flex;
+        width: 75%;
+        flex-wrap: wrap;
+        .fttop,
+        .ftbtm {
+          display: flex;
+          align-items: center;
+        }
+        .yixuan,
+        .grzf,
+        .dwde,
+        .xmhj {
+          width: 50%;
+          display: flex;
+          align-items: center;
+        }
+        .footer_icon {
+          width: 26px;
+          height: 26px;
+          margin-right: 14px;
+        }
+        .f_price {
+          color: red;
+          font-weight: 600;
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}
+</style>

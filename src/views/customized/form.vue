@@ -1,0 +1,1056 @@
+<template>
+  <div class="formBox" v-if="show">
+    <div class="top">
+      <van-steps :active="dirListNum">
+        <van-step v-for="(item, i) in StepData.dirList" :key="i">{{
+          item.name
+        }}</van-step>
+      </van-steps>
+    </div>
+    <ul class="content">
+      <li
+        class="itemclas"
+        v-for="(item, index) in StepData.dirList[dirListNum].questions"
+        :key="index"
+      >
+        <div class="title">{{ item.name }}</div>
+        <!-- 
+          label="无" :value="-1"></el-op
+        label="单选" :value="0"></el-o
+        label="填写" :value="1"></el-o
+        label="多选" :value="2"></el-o
+          -->
+        <!-- 问题 -->
+        <template v-if="item.inputtype === 0">
+          <div>
+            <van-radio-group v-model="item.radioVal" class="radioClas">
+              <template v-for="(k, i) in item.questions">
+                <div :key="k.id + i">
+                  <van-radio
+                    v-if="!isPerviewFlag"
+                    :name="k.id"
+                    class="radioItemClas"
+                    @click="handleCkeck(k, i, item, index)"
+                    >{{ k.name }}</van-radio
+                  >
+                  <template v-else>
+                    <span class="answerClas" v-if="item.radioVal == k.id">{{
+                      k.name
+                    }}</span>
+                  </template>
+                </div>
+              </template>
+            </van-radio-group>
+          </div>
+        </template>
+        <template v-if="item.inputtype === 1">
+          <div class="radioClas">
+            <van-cell-group v-if="!isPerviewFlag">
+              <van-field
+                v-model="item.inputVal"
+                autosize
+                label="填写:"
+                type="textarea"
+                placeholder="请输入"
+              />
+            </van-cell-group>
+            <span v-else class="answerClas">答案: {{ item.inputVal }}</span>
+          </div>
+        </template>
+        <template v-if="item.inputtype === 2">
+          <van-checkbox-group v-model="item.checkbox" class="radioClas">
+            <div v-for="(k, i) in item.questions" :key="i">
+              <van-checkbox
+                v-if="!isPerviewFlag"
+                class="radioItemClas"
+                :name="k.id"
+                shape="square"
+                @click="handleCkeck(k, i, item, index)"
+                >{{ k.name }}
+                <template v-if="k.checkVal"> ({{ k.checkVal }}) </template>
+              </van-checkbox>
+              <template v-else>
+                <div v-for="(an, anIndex) in item.checkbox" :key="anIndex">
+                  <div v-if="k.id == an">
+                    <span class="answerClas"
+                      >答案: {{ k.name }}
+                      <span v-if="k.checkVal"> ({{ k.checkVal }})</span>
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </van-checkbox-group>
+        </template>
+      </li>
+    </ul>
+    <!-- ///// -->
+    <!-- :before-close="handleDialogAllClose" -->
+    <!-- @confirm="handleDialogSubmit"
+      @cancel="handleDialogClose"
+      :confirm-button-loading="dialogBtnLoading" -->
+    <van-dialog
+      class="dialogClas"
+      v-model="dialogShow"
+      :title="dialogTitle"
+      show-cancel-button
+      :showConfirmButton="false"
+      :showCancelButton="false"
+    >
+      <p v-if="DialogWarning" class="warningClas">最少选择一项再确认</p>
+      <!-- 单选 -->
+      <van-radio-group
+        v-if="dialogData.inputtype == 0"
+        shape="square"
+        v-model="dialogData.radioVal"
+        class="radioClas"
+      >
+        <van-radio
+          v-for="(k, i) in dialogData.questions"
+          :key="i"
+          shape="square"
+          :name="k.id"
+          class="radioItemClas"
+          >{{ k.name }}</van-radio
+        >
+      </van-radio-group>
+      <!-- 填写 -->
+      <van-cell-group v-if="dialogData.inputtype == 1">
+        <van-field
+          v-model="dialogData.inputVal"
+          autosize
+          label="填写:"
+          type="textarea"
+          placeholder="请输入"
+        />
+      </van-cell-group>
+      <!-- 多选 -->
+      <van-checkbox-group
+        v-if="dialogData.inputtype == 2"
+        v-model="dialogData.checkbox"
+        class="radioClas"
+      >
+        <van-checkbox
+          v-for="(u, i) in dialogData.questions"
+          :key="i"
+          class="radioItemClas"
+          :name="u.id"
+          shape="square"
+          @click="handleChilditem(u)"
+          >{{ u.name }}
+        </van-checkbox>
+      </van-checkbox-group>
+      <template default>
+        <div class="dialogFooter">
+          <van-button type="info" size="normal" @click="handleDialogClose">
+            取 消
+          </van-button>
+          <van-button type="info" size="normal" @click="handleDialogSubmit">
+            确 认
+          </van-button>
+        </div>
+      </template>
+    </van-dialog>
+    <!-- //// -->
+    <div class="footer">
+      <template v-if="dirListNum != 3">
+        <van-button
+          type="info"
+          size="large"
+          v-if="dirListNum != 0"
+          @click="handlePrevious"
+          >上一步</van-button
+        >
+        <van-button type="info" size="large" @click="handleNext"
+          >下一步</van-button
+        >
+      </template>
+      <template v-else>
+        <van-button
+          v-if="!isPerviewFlag"
+          type="info"
+          size="large"
+          @click="handleSubmit"
+          >提 交</van-button
+        >
+        <van-button v-else type="info" size="large" @click="handleClose">
+          关 闭
+        </van-button>
+      </template>
+    </div>
+    <van-dialog
+      class="dialogClas"
+      v-model="PerviewDialogShow"
+      title="提交成功"
+      show-cancel-button
+      :showConfirmButton="false"
+      :showCancelButton="false"
+    >
+      <div class="perviewClas">
+        <van-icon name="passed" size="400" color="#8CC265" />
+      </div>
+      <template default>
+        <div class="dialogFooter">
+          <van-button type="info" size="normal" @click="handlePreview">
+            预 览
+          </van-button>
+          <van-button type="info" size="normal" @click="handleClose">
+            关 闭
+          </van-button>
+        </div>
+      </template>
+    </van-dialog>
+  </div>
+</template>
+<script>
+import findObjectById from "../../utils/getdata.js";
+import {
+  questionnaire,
+  GetQuestionnaireCombine,
+  Save,
+  Detail,
+} from "@/api/reservation.js";
+import JSONData from "./test.json";
+export default {
+  name: "formVue",
+
+  components: {},
+
+  data() {
+    return {
+      dirListNum: 0,
+      radio: "",
+      result: [],
+      StepData: {
+        dirList: [{ questions: [] }],
+      }, // form数据
+      dialogTitle: "", // 弹框标题
+      dialogShow: false,
+      dialogData: [], // 弹框子选项数据
+      DialogWarning: false, // 弹框提示
+      dialogBtnLoading: false, // 弹框按钮状态
+      checkData: {}, // 勾选时数据
+      initData: [], // 初始化数据
+      PerviewDialogShow: false, // 提交成功弹框
+      isPerviewFlag: false, // 是否是预览状态
+      recordid: "", // 详情code
+    };
+  },
+  props: {
+    show: {
+      type: Boolean,
+    },
+    person: {
+      type: Object,
+    },
+  },
+  mounted() {
+    // this.$route.meta.title = "123123213";
+  },
+  watch: {
+    show(newVal, oldVal) {
+      if (newVal) {
+        this.setData(); // 打卡
+        // 用 一下2
+        // this.StepData = {
+        //   dirList: JSONData,
+        // };
+        // this.getDetail();
+      }
+    },
+  },
+  methods: {
+    // 获取详情
+    getDetail() {
+      Detail({ recordid: this.recordid }).then((res) => {
+        console.log(res);
+        this.setDetailData(res.data.result);
+      });
+    }, 
+    // 弹框确定
+
+    handleDialogSubmit() {
+      console.log(
+        "确认",
+        "弹框开关:" + this.dialogShow,
+        "当前数据:" + this.checkData.fatherData.checked,
+        "原数据:",
+        this.StepData,
+        "弹框:",
+        this.dialogData
+      );
+      let msg = "";
+      // 把选项填充到答案后
+      if (this.dialogData.inputtype == 2) {
+        // 多选
+        this.dialogData.checkbox.forEach((k, i, array) => {
+          let result = this.dialogData.questions.find((k1, i1, array1) => {
+            return k == k1.id;
+          });
+          msg += result.name + "-";
+          let tem = [...msg];
+          tem.pop();
+          this.dialogData.checkVal = tem.join("");
+        });
+      } else if (this.dialogData.inputtype == 0) {
+        // 单选
+        let result = this.dialogData.questions.find((k1, i1, array1) => {
+          return this.dialogData.radioVal == k1.id;
+        });
+        msg += result.name + "-";
+        let tem = [...msg];
+        tem.pop();
+        this.dialogData.checkVal = tem.join("");
+      }
+      // 多选
+      if (this.dialogData.checkbox.length > 0) {
+        this.dialogShow = false;
+        this.DialogWarning = false;
+      } else {
+        this.DialogWarning = true;
+      }
+      // 单选
+      if (!this.dialogData.radioVal && this.dialogData.checkbox.length <= 0) {
+        this.DialogWarning = true;
+        console.log("进了?");
+      } else {
+        this.dialogShow = false;
+        this.DialogWarning = false;
+      }
+
+      const result = findObjectById(
+        this.StepData,
+        this.dialogData.id + this.dialogData.parentid
+      );
+      const fatherData = this.StepData.dirList[result[1]].questions[result[3]];
+      let noneId = "";
+      // 这里是确定回调, 如果有'无'选项,就把无删掉
+      fatherData.questions.forEach((Fq, i) => {
+        if (Fq.name == "无") {
+          // Fq.checkbox.
+          noneId = Fq.id;
+        }
+      });
+      fatherData.checkbox = fatherData.checkbox.filter(
+        (id) => Number(id) !== Number(noneId)
+      );
+    },
+    // 弹框取消回调
+    handleDialogClose() {
+      let noneId = "";
+      console.log("取消", this.dialogData);
+      // 找到指定位置
+      const result = findObjectById(
+        this.StepData,
+        this.dialogData.id + this.dialogData.parentid
+      ); // 找到指定位置   ['dirList', 0, 'questions', 1, 'questions', 2]
+      const grandsonItem =
+        this.StepData.dirList[result[1]].questions[result[3]].questions[
+          result[5]
+        ];
+
+      const fatherItem = this.StepData.dirList[result[1]].questions[result[3]];
+      //  找到值为  this.dialogData.id 的元素的索引,删除对应的勾选项
+      const index = fatherItem.checkbox.indexOf(this.dialogData.id);
+      // 清空多选框答案
+      if (index != -1) {
+        fatherItem.checkbox.splice(index, 1); // 如果找到了，从数组中移除该元素
+      }
+      // 清空单选框答案
+      this.dialogData.radioVal = "";
+      this.dialogData.checkbox = [];
+      this.dialogShow = false;
+      grandsonItem.checked = false;
+      this.DialogWarning = false; // 警告开关
+      // 找到无选项的id
+      fatherItem.questions.forEach((Fq, i) => {
+        if (Fq.name == "无") {
+          // Fq.checkbox.
+          noneId = Fq.id;
+        }
+      });
+      let noneResultId = fatherItem.checkbox.findIndex(
+        (id) => Number(id) === Number(noneId)
+      );
+      console.log(noneResultId);
+      fatherItem.checkbox = noneResultId !== -1 ? [noneId] : fatherItem.checkbox;
+ 
+      console.log(
+        "我是问题数据",
+        fatherItem,
+        "问题数据的问题选项",
+        grandsonItem,
+        "弹框开关:" + this.dialogShow,
+        "数据开关:" + this.checkData.fatherData.checked,
+        "孙--修改了吗"
+      );
+    },
+    // 弹框关闭
+    handleDialogAllClose(action, done) {
+      console.log("触发了??", this.dialogData);
+      if (action === "confirm") {
+        // 点击了确定按钮
+        console.log("用户点击了确定");
+        this.dialogBtnLoading = true;
+        if (this.dialogData.checkbox.length <= 0) {
+          // // 危险通知
+          setTimeout(() => {
+            this.dialogBtnLoading = false;
+            // done();
+          }, 1000);
+        } else {
+          done();
+        }
+      } else if (action === "cancel") {
+        // 点击了取消按钮
+        done();
+      }
+    },
+    // 子选项回调
+    handleChilditem(item) {
+      console.log("勾选了多选", item);
+    },
+    // 追加选项
+    handleCkeckItem(u, event) {
+      console.log(event, u.radioVal);
+    },
+
+    // 点击问题的追问开关
+    handleCkeck(item, i, father, index) {
+      // console.log(
+      //   "当前点击总数居",
+      //   this.StepData.dirList[this.dirListNum].questions,
+      //   "当前数据:",
+      //   this.StepData.dirList[this.dirListNum].questions[index],
+      //   "id:" + this.StepData.dirList[this.dirListNum].questions[index].id
+      // );
+      console.log(item, father);
+
+      // item 是当前点击的数据, father 是点击数据的上一层,   index是当前总数组的索引
+      item.checked = item.checked ? false : true; // 此处表示数据是否为勾选状态
+      // 如果取消掉当前数据的勾选就清空checkbox
+      if (!item.checked) {
+        item.checkbox = []; // 多选项目
+        item.radioVal = ""; // 单选项如果有值, 就清空
+        item.checkVal = "";
+      }
+      let parent = this.StepData.dirList[this.dirListNum].questions[index];
+      if (!!parent) {
+        let num = 0;
+        // 子问题的父级id就是 题目的id,所以用题目的id筛选出子问题, 然后将子问题删除
+        this.StepData.dirList[this.dirListNum].questions.forEach(
+          (k, i, array) => {
+            if (parent.id == k.parentid) {
+              // console.log(k, "需要删除的数据");
+              k.checkbox = [];
+              k.checked = false;
+              k.childItemFlag = true;
+              k.isChild = true;
+              k.radioVal = "";
+              k.inputVal = "";
+              num++;
+            }
+          }
+        );
+        // console.log("一共几个" + num,'从这里删除的索引:'+(index+1));
+        this.StepData.dirList[this.dirListNum].questions.splice(index + 1, num);
+      }
+      if (
+        item.childquestions &&
+        item.childquestions.length > 0 &&
+        item.inputtype !== 5
+      ) {
+        // console.log('子问题',item.childquestions);
+        // console.log("有子问题",'当前问题总数组:',this.StepData.dirList[this.dirListNum].questions[index],
+        // '数组长度:'+this.StepData.dirList[this.dirListNum].questions.length,'索引值'+index);
+
+        // 把子问题插入到问题数组中
+        item.childquestions.forEach((childItem, childIndex) => {
+          this.StepData.dirList[this.dirListNum].questions.forEach(
+            (k, i, array) => {
+              const INDEX = array.findIndex((u) => u.id == childItem.id);
+              if (INDEX == -1) {
+                array.splice(index + 1, 0, childItem);
+                index++;
+              }
+            }
+          );
+        });
+      } else if (
+        item.questions.length > 0 &&
+        item.inputtype !== 5 &&
+        item.checked
+      ) {
+        // 有追问 并且不是选项无
+        this.dialogTitle = item.appendcontent; // 弹框标题
+        this.dialogShow = item.checked; // 开关
+        this.dialogData = item; // 数据
+        this.checkData = {
+          fatherData: item,
+          fatherIndex: index,
+          childIndex: i,
+        };
+        console.log(
+          "进1",
+          "问题的:" + item.checked,
+          "弹框的:" + this.dialogShow
+        );
+      }
+
+      //// 如果之前点击过-无- 就把无的id过滤掉
+      if (item.inputtype == 1) {
+        father.checkbox = father.checkbox.filter((id) => {
+          const ID = father.questions.find((u) => {
+            if (u.name == "无") {
+              return u;
+            }
+          });
+          // console.log(ID);
+          if (ID) {
+            return id != ID.id;
+          } else {
+            return id;
+          }
+        });
+      }
+      // 选择了无
+      if (item.inputtype == 5) {
+        console.log("进2, 当前:", item, "父:", father);
+        // 如果类型==5 就取消其他勾选--- 并且把全部数据的勾选状态 关闭改为false
+        father.checkbox = [item.id];
+        father.questions.forEach((c) => {
+          c.checked = false;
+          c.radioVal = ""; // 单选项如果有值, 就清空
+          c.checkVal = "";
+          c.checkbox = [];
+          // console.log(c, "答案");
+        });
+
+        this.dialogShow = false; // 开关
+      }
+    },
+    // 上一步
+    handlePrevious() {
+      this.dirListNum != 0 && this.dirListNum--;
+    },
+    // 下一步
+    handleNext() {
+      if (this.dirListNum >= this.StepData.dirList.length - 1) {
+        this.dirListNum = 0;
+      } else this.dirListNum++;
+      console.log(this.dirListNum);
+    },
+    // 预览
+    handlePreview() {
+      this.getDetail(); // 获取详情数据
+      this.isPerviewFlag = true;
+      this.PerviewDialogShow = false; // 关闭弹框
+      this.dirListNum = 0;
+    },
+    // 关闭
+    handleClose() {
+      this.dirListNum = 0;
+      this.radio = "";
+      this.result = [];
+      this.StepData = {
+        dirList: [{ questions: [] }],
+      }; // form数据
+      this.dialogTitle = ""; // 弹框标题
+      this.dialogShow = false;
+      this.dialogData = []; // 弹框子选项数据
+      this.DialogWarning = false; // 弹框提示
+      this.dialogBtnLoading = false; // 弹框按钮状态
+      this.checkData = {}; // 勾选时数据
+      this.initData = []; // 初始化数据
+      this.PerviewDialogShow = false; // 提交成功弹框
+      this.isPerviewFlag = false; // 是否是预览状态
+      this.recordid = ""; // 详情code
+
+      this.$emit("close");
+    },
+    // 提交
+    handleSubmit() {
+      console.log(this.StepData);
+      let dirList = [];
+      let itemDetails = [];
+      let superaddition = []; // 追问
+      this.StepData.dirList.forEach((item, index) => {
+        console.log(item, "这是那一层");
+        item.questions.forEach((k, i) => {
+          // console.log("所有问题", k);
+
+          // 处理问题
+          switch (k.inputtype) {
+            case 0: // 单选
+              itemDetails.push({
+                quecode: item.id,
+                itemcode: k.id,
+                inputtype: k.inputtype,
+                itemvalue: k.radioVal,
+              });
+
+              break;
+            case 1: // 填写
+              itemDetails.push({
+                quecode: item.id,
+                itemcode: k.id,
+                inputtype: k.inputtype,
+                itemvalue: k.inputVal,
+              });
+              break;
+            case 2: // 多选
+              // 循环已选数据的id  拿id匹配checkbox中的数据, 找到parentid==id的数据 再循环questions
+              k.checkbox.forEach((u) => {
+                let itemDeta = [];
+                // u 是 已选数据的id
+                console.log(k, u, "问卷code:" + item.id);
+                !!k.questions &&
+                  k.questions.length > 0 &&
+                  k.questions.forEach((z) => {
+                    if (z.id == u) {
+                      console.log(z);
+                      // z是点击答案出现追问的 答案
+                      switch (z.inputtype) {
+                        case 0: // 单选
+                          itemDeta.push({
+                            quecode: item.id,
+                            itemcode: z.id,
+                            inputtype: z.inputtype,
+                            itemvalue: z.radioVal,
+                          });
+
+                          break;
+                        case 1: // 填写
+                          !!z.questions &&
+                            z.questions.length > 0 &&
+                            itemDeta.push({
+                              quecode: item.id,
+                              itemcode: z.id,
+                              inputtype: z.inputtype,
+                              itemvalue: z.inputVal,
+                            });
+                          break;
+                        case 2: // 多选
+                          z.checkbox.forEach((u) => {
+                            // console.log("追问答案>?", u);
+                            itemDeta.push({
+                              quecode: item.id,
+                              itemcode: z.id,
+                              inputtype: z.inputtype,
+                              itemvalue: u,
+                            });
+                          });
+                          break;
+
+                        default:
+                          break;
+                      }
+                    }
+                  });
+                itemDetails.push({
+                  quecode: item.id,
+                  itemcode: k.id,
+                  inputtype: k.inputtype,
+                  itemvalue: u,
+                  itemDetails: itemDeta,
+                });
+              });
+              break;
+
+            default:
+              break;
+          }
+
+          // // 处理追问
+          // k.questions.forEach((r) => {
+          //   // 这一层是所有答案
+          //   if (r.questions.length > 0) {
+          //     // 这一层是追问
+          //     r.questions.forEach((t) => {
+          //       // console.log("带追问的", t);
+          //       switch (k.inputtype) {
+          //         case 0: // 单选
+          //           superaddition.push({
+          //             quecode: item.id,
+          //             itemcode: t.id,
+          //             inputtype: r.inputtype,
+          //             itemvalue: t.radioVal,
+          //           });
+          //           break;
+          //         case 2: // 多选
+          //           k.checkbox.forEach((u) => {
+          //             superaddition.push({
+          //               quecode: item.id,
+          //               itemcode: t.id,
+          //               inputtype: r.inputtype,
+          //               itemvalue: u,
+          //             });
+          //           });
+          //           break;
+
+          //         default:
+          //           break;
+          //       }
+          //     });
+          //   }
+          // });
+        });
+        dirList.push({
+          quecode: item.id,
+          //追问选项问题集合
+          itemDetails,
+        });
+        itemDetails = [];
+      });
+
+      let form = {
+        // recordid   详情返回的id
+        combineid: this.StepData.combineid || "记得改",
+        userinfocode: localStorage.getItem("operatorcode") || "",
+        person: {
+          name: this.person.name,
+          idcard: this.person.idcard,
+          marriage: this.person.marriage,
+          sex: this.person.sex,
+          age: this.person.age,
+          height: this.person.height,
+          weight: this.person.weight,
+        },
+        //问卷集合
+        dirList,
+      };
+      console.log(form, "保存数据");
+      Save(form).then((res) => {
+        console.log(res);
+        if (res.data.code == 200) {
+          this.PerviewDialogShow = true; //预览
+          this.recordid = res.data.result;
+        }
+      });
+    },
+
+    setDetailData(data) {
+      !!data &&
+        data.dirList.forEach((item, index) => {
+          item.questions.forEach((f, d1i) => {
+            f.inputVal = "";
+            f.radioVal = "";
+            f.checkbox = [];
+            // console.log("第一层", f);
+            // 如果是填写
+            if (f.inputtype == 1) {
+              f.inputVal = f.selectValue;
+            }
+            f.questions.forEach((s, d2i, arr) => {
+              s.checked = false;
+              s.inputVal = "";
+              s.radioVal = "";
+              s.checkbox = [];
+              // 如果有追问就添加
+              if (s.questions.length > 0) {
+                s.checkVal = "";
+              }
+              // console.log("第一层下的questions", s, "父级类型:" + f.inputtype);
+
+              if (s.selected == 1 && f.inputtype === 0) {
+                // 单选
+                f.radioVal = s.id;
+                s.checked = true;
+              } else if (!!s.selectValue && f.inputtype === 1) {
+                // 填写
+                s.inputVal = s.selectValue;
+              } else if (s.selected == 1 && f.inputtype === 2) {
+                // 多选
+                f.checkbox.push(s.id);
+                s.checked = true;
+                // console.log("第一层下的questions", s,f);
+              }
+
+              s.questions.forEach((g, i) => {
+                g.checked = false;
+                g.inputVal = "";
+                g.radioVal = "";
+                g.checkbox = [];
+                // console.log("追问", g, "父级类型:" + s.inputtype);
+                if (g.selected == 1 && s.inputtype === 0) {
+                  // 单选
+                  s.radioVal = s.id;
+                  g.checked = true;
+                  s.checkVal = g.name;
+                } else if (!!g.selectValue && s.inputtype === 1) {
+                  // 填写
+                  g.inputVal = s.selectValue;
+                } else if (g.selected == 1 && s.inputtype === 2) {
+                  // 多选
+                  s.checkbox.push(g.id);
+                  g.checked = true;
+                  // 把选项填充到答案后
+                  let msg = "";
+                  s.checkbox.forEach((k, i, array) => {
+                    let result = s.questions.find((k1, i1, array1) => {
+                      return k == k1.id;
+                    });
+                    msg += result.name + "-";
+                    let tem = [...msg];
+                    tem.pop();
+                    s.checkVal = tem.join("");
+                  });
+                }
+              });
+              // 处理子问题!
+              if (s.childquestions.length > 0) {
+                // console.log(
+                //   "有子问题",
+                //   s,
+                //   "子问题的个数" + s.childquestions.length
+                // );
+                // console.log(
+                //   "位置:",
+                //   data.dirList[index],
+                //   item.questions[d1i],
+                //   f.questions[d2i],
+                //   index,
+                //   d1i
+                // );
+
+                s.childquestions.forEach((g, i) => {
+                  g.checked = false;
+                  g.inputVal = g.selectValue || "";
+                  g.radioVal = "";
+                  g.checkbox = [];
+                  g.childItemFlag = true;
+                  g.isChild = true;
+                  // console.log("子问题", g, index, d1i, d2i);
+                  g.questions.forEach((v, k) => {
+                    v.checked = v.selected == 1 ? true : false;
+                    v.inputVal = "";
+                    v.radioVal = "";
+                    v.checkbox = [];
+                    // console.log("我是子问题的--答案选项", v);
+                  });
+                });
+                // 勾选了父级问题
+                if (s.selected == 1) {
+                  // // d1i
+                  s.childquestions.forEach((child, childIndex) => {
+                    console.log(child, d1i);
+                    // 单选
+                    if (child.inputtype == 0) {
+                      child.questions.forEach((v, k) => {
+                        if (v.selected == 1) {
+                          child.radioVal = v.id;
+                          v.checked = true;
+                        }
+                      });
+                    }
+                    // 多选
+                    if (child.inputtype == 2) {
+                      child.questions.forEach((v, k) => {
+                        if (v.selected == 1) {
+                          child.checkbox.push(v.id);
+                          v.checked = true;
+                        }
+                      });
+                    }
+                    // 在这里添加
+                    this.initData.push({
+                      location: `${index},${d1i},${d2i}`,
+                      index: d1i + 1,
+                      child,
+                    });
+                  });
+                  console.log("选择了", s);
+                }
+              }
+            });
+          });
+        });
+      this.StepData = data;
+      console.log(this.StepData, "初始数据");
+      this.handleInitData();
+    },
+    handleInitData() {
+      const result = this.initData.reduce((acc, item) => {
+        if (!acc[item.location]) {
+          acc[item.location] = [];
+        }
+        acc[item.location].push(item);
+        return acc;
+      }, {});
+      Object.keys(result).forEach((key, index) => {
+        const Index = key.split(",");
+        result[key].forEach((resultKey, Ri) => {
+          console.log(Index);
+          this.StepData.dirList[Index[0]].questions.splice(
+            Index[1] + 1,
+            0,
+            resultKey.child
+          );
+        });
+        // console.log(this.StepData.dirList[Index[0]].questions[Index[1]]);
+      });
+      console.log(this.StepData.dirList);
+    },
+    setData() {
+      const RESULT = JSON.parse(sessionStorage.getItem("StepFormData"));
+      !!RESULT &&
+        RESULT.dirList.forEach((item, index) => {
+          item.questions.forEach((f, i) => {
+            f.inputVal = "";
+            f.radioVal = "";
+            f.checkbox = [];
+            // console.log(f);
+            f.questions.forEach((s, i) => {
+              s.checked = false;
+              s.inputVal = "";
+              s.radioVal = "";
+              s.checkbox = [];
+              // console.log(s);
+              if (s.questions.length > 0) {
+                s.checkVal = "";
+              }
+              if (s.childquestions.length > 0) {
+                // console.log("有子问题", s);
+                s.childquestions.forEach((g, i) => {
+                  g.checked = false;
+                  g.inputVal = "";
+                  g.radioVal = "";
+                  g.checkbox = [];
+                  g.childItemFlag = true;
+                  g.isChild = true;
+                  // console.log(g);
+                  g.questions.forEach((v, k) => {
+                    v.checked = false;
+                    v.inputVal = "";
+                    v.radioVal = "";
+                    v.checkbox = [];
+                    // console.log('我是追问',v);
+                  });
+                });
+              }
+              s.questions.forEach((g, i) => {
+                g.checked = false;
+                g.inputVal = "";
+                g.radioVal = "";
+                g.checkbox = [];
+                // console.log(g);
+              });
+            });
+          });
+        });
+      this.StepData = RESULT;
+      sessionStorage.removeItem("StepFormData");
+      console.log(this.StepData, "初始数据");
+    },
+  },
+
+  computed: {},
+};
+</script>
+ 
+<style lang='scss' scoped>
+* {
+  box-sizing: border-box;
+}
+
+.formBox {
+  width: calc(100% - 15px);
+  margin: 0;
+  height: calc(100% - 60px);
+  background-color: #f2f2f2;
+  padding: 8px;
+  position: absolute;
+  top: 0;
+  flex: 0;
+  overflow-y: auto;
+  .top {
+    background-color: white;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-radius: 5px;
+  }
+  .content {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    background-color: white;
+    font-size: 15px;
+    box-sizing: border-box;
+
+    .itemclas {
+      margin-top: 20px;
+
+      .radioClas {
+        padding: 10px;
+        width: 100%;
+        .answerClas {
+          // text-decoration: underline;
+          color: red;
+          display: block;
+          padding: 10px !important;
+        }
+        .radioItemClas {
+          padding: 10px;
+        }
+
+        .ul {
+          width: 100%;
+          padding-left: 50px;
+        }
+      }
+    }
+  }
+  .dialogFooter {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    padding: 0 20px;
+
+    .van-button {
+      margin: 5px;
+    }
+  }
+  .footer {
+    position: fixed;
+    bottom: 7%;
+    width: 90%;
+    height: 55px;
+    left: 6%;
+    display: flex;
+    button {
+      margin: 0 5px;
+    }
+  }
+
+  .perviewClas {
+    width: 100%;
+    display: flex;
+    margin-top: 20px;
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+  }
+  .dialogClas {
+    .warningClas {
+      color: red;
+      text-align: center;
+      font-weight: bold;
+      font-size: 15px;
+    }
+    .van-checkbox-group,
+    .van-radio-group {
+      padding: 10px;
+      padding-left: 50px !important;
+    }
+    .radioItemClas {
+      padding: 10px 0;
+    }
+    /deep/ .van-dialog__content {
+      margin-top: 10px;
+    }
+  }
+}
+</style>

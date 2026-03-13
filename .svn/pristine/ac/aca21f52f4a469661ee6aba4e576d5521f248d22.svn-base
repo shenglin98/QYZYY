@@ -1,0 +1,372 @@
+<template>
+  <div class="header">
+    <header class="head">
+      <div @click="back()"><i v-if="show" class="el-icon-back"></i></div>
+      <div>{{ showTitle || this.GLOBAL.colorList }}</div>
+      <div class="ddd">
+        <div
+          class="fan"
+          v-if="$route.name == 'orderMessage'"
+          @click="View_report"
+        >
+          查看报告
+        </div>
+        <!-- <div
+          class="fan"
+          v-if="$route.name == 'viewReport'"
+          @click="handledownloadReport"
+        >
+          下载PDF
+        </div> -->
+        <!-- <div class="fan" v-if="this.GLOBAL.colorList == '体检结果'">
+          查看报告
+        </div> -->
+      </div>
+
+      <div class="loading" v-if="loading">
+        <el-table
+          class="loadingone"
+          v-loading="loading"
+          element-loading-text="拼命加载报告中"
+          element-loading-spinner="el-icon-loading"
+          element-loading-background="rgba(0, 0, 0, 0.8)"
+          style="width: 100%"
+        >
+        </el-table>
+      </div>
+    </header>
+    <el-dialog
+      title=""
+      class="printDia"
+      :visible.sync="dialogVisible"
+      width="70%"
+      :show-close="false"
+      @close="handleClosePrintDia"
+    >
+      <span>
+        <el-button type="primary" @click="handleViewGuideSing"
+          >体格检查表</el-button
+        >
+        <el-button type="primary" class="printRebort" @click="handleViewReport"
+          >个人报告书</el-button
+        >
+      </span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="handleClosePrintDia" size="mini" plain type="primary"
+          >取 消</el-button
+        >
+      </span>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import api from "./api/index";
+import Pdfh5 from "pdfh5";
+import download from "downloadjs";
+export default {
+  name: "",
+
+  components: {},
+  props: {
+    titleObj: {
+      type: String,
+    },
+  },
+  data() {
+    return {
+      show: true,
+      loading: false,
+      dialogVisible: false,
+      showTitle: "",
+    };
+  },
+
+  mounted() {
+    console.log(this.titleObj, "this.titleObj");
+    // this.title = this.GLOBAL.colorList;
+    this.showTitle = this.titleObj || "体检系统";
+    // this.title = this.$route.meta.title || "体检系统";
+  },
+
+  methods: {
+    // 返回按钮
+    back() {
+      if (this.GLOBAL.colorList == "体检结果") {
+        // console.log('当前是体检结果 要改成我的体检');
+        this.GLOBAL.colorList = "我的体检";
+      } else {
+        this.GLOBAL.colorList = "体检服务";
+      }
+      this.$router.go(-1);
+    },
+    // 体格检查表
+    handleViewGuideSing() {
+      this.$router.push({
+        path: "/viewReport",
+        query: { printFlag: "体格检查表" },
+      });
+      this.dialogVisible = false;
+    },
+    // 个人报告书
+    handleViewReport() {
+      this.$router.push({
+        path: "/viewReport",
+        query: { printFlag: "个人报告书" },
+      });
+      this.dialogVisible = false;
+    },
+    handledownloadReport() {
+      let u = navigator.userAgent;
+      let isAndroid = u.indexOf("Android") > -1 || u.indexOf("Adr") > -1; //判断是否是 android终端
+      let isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); //判断是否是 iOS终端
+      console.log(isAndroid, "isAndroid");
+      console.log(isIOS, "isIOS");
+      if (isAndroid) {
+        if (navigator.share) {
+          navigator.share({
+            title: this.GLOBAL.colorList,
+            text: this.GLOBAL.colorList,
+            url: `http://localhost:8080/#/viewReport?regid=${this.GLOBAL.codes}`,
+            // url: "https://wx.gyey.com/NewGyey/tjxt/#/viewReport",
+          });
+        }
+      }
+      if (isIOS) {
+        let fileurl = localStorage.getItem("fileurl") || "";
+        if (!fileurl) return;
+        const url = fileurl;
+        let fileName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+        // 请求进来，就可以加在loading
+        fetch(url)
+          .then((res) => {
+            return res.blob();
+          })
+          .then((blob) => {
+            // 这是一个外部引用的download.js文件，这个文件
+            download(blob, fileName);
+            // 下载结束，loading结束
+          })
+          .catch((err) => {
+            return false;
+          })
+          .finally((res) => {
+            // 这里也可以结束loading。不管是成功失败，都会结束loading
+            return true;
+          });
+      }
+      return;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // let blobType = "application/force-download"; // 设置blob请求头
+      // let blob = new Blob([fileurl], { type: "application/pdf" }); // 创建blob 设置blob文件类型 data 设置为后端返回的文件(例如mp3,jpeg) type:这里设置后端返回的类型 为 mp3
+      // let downa = document.createElement("a"); // 创建A标签
+      // let href = window.URL.createObjectURL(blob); // 创建下载的链接
+      // downa.href = href; // 下载地址
+      // downa.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; // 下载文件名
+      // document.body.appendChild(downa);
+      // downa.click(); // 模拟点击A标签
+      // document.body.removeChild(downa); // 下载完成移除元素
+      // window.URL.revokeObjectURL(href); // 释放blob对象
+    },
+    handleClosePrintDia() {
+      this.dialogVisible = false;
+    },
+    // // 查看报告的点击事件
+    async View_report() {
+      this.dialogVisible = true;
+      return;
+      this.$router.push({ path: "/viewReport" });
+      // console.log(this.GLOBAL.codes,'jjjjjjjjjjjjjjjjjjjjj');
+      this.loading = true;
+      // console.log('View_report');
+      const { data } = await api.home.View_report({
+        fingercode: "",
+        codes: [this.GLOBAL.codes],
+        repname: "1、报告书",
+        filetype: "pdf",
+        outtype: "url",
+        whereitems: [],
+      });
+      this.loading = false;
+      // console.log("查询报告返回的数据", data.data[0].fileurl);
+      const url = data.data[0].fileurl;
+      const link = document.createElement("a");
+      link.href = url;
+      // link.download = "file.pdf"; // 下载文件的默认文件名
+      link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // console.log("查询报告返回的数据", data.data[0].base64String);
+      // this.viewPdf(data.data[0].base64String);
+
+      // 将字符串转换为 ArrayBuffer
+      // const byteCharacters = atob(respData);
+      // const byteCharacters = atob(data.data[0].base64String);
+      // const byteNumbers = new Array(byteCharacters.length);
+      // for (let i = 0; i < byteCharacters.length; i++) {
+      //   byteNumbers[i] = byteCharacters.charCodeAt(i);
+      // }
+      // const byteArray = new Uint8Array(byteNumbers);
+      // const pdfBlob = new Blob([byteArray], { type: "application/pdf" });
+
+      // if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      //   // For Edge
+      //   window.navigator.msSaveOrOpenBlob(pdfBlob);
+      // } else {
+      //   // For other browsers
+      //   const url = URL.createObjectURL(pdfBlob);
+      //   const link = document.createElement("a");
+      //   link.href = url;
+      //   // link.download = "file.pdf"; // 下载文件的默认文件名
+      //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+      // }
+    },
+
+    // // 查看报告的点击事件
+    // async View_report() {
+    //   // console.log(this.GLOBAL.codes,'jjjjjjjjjjjjjjjjjjjjj');
+    //   this.loading = true;
+    //   // console.log('View_report');
+    //   const { data } = await api.home.View_report(
+    //     {
+    //       "fingercode": "",
+    //       "codes": [
+    //         this.GLOBAL.codes
+    //       ],
+    //       "repname": '1、报告书',
+    //       "whereitems": [],
+    //     }
+    //   )
+    //   this.loading = false;
+    //   // console.log('查询报告返回的数据',data.data[0].base64String);
+    //   this.viewPdf(data.data[0].base64String)
+    // },
+
+    // //content是base64格式
+    // viewPdf(content) {
+    //   // console.log(  this.GLOBAL.names,'mmmmmmmmmmmmm');
+    //   // console.log("content",content)
+    //   const blob = this.base64ToBlob(content)
+    //   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+    //     window.navigator.msSaveOrOpenBlob(blob)
+    //   } else {
+    //     const fileURL = URL.createObjectURL(blob);
+    //     console.log(fileURL, '要下载的地址以及文件aaa');
+    //     window.open(fileURL);//弹出ppf文件
+    //   }
+    // },
+    // base64ToBlob(code) {
+    //   code = code.replace(/[\n\r]/g, '')
+    //   // atob() 方法用于解码使用 base-64 编码的字符串。
+    //   const raw = window.atob(code)
+    //   const rawLength = raw.length
+    //   const uInt8Array = new Uint8Array(rawLength)
+    //   for (let i = 0; i < rawLength; ++i) {
+    //     uInt8Array[i] = raw.charCodeAt(i)
+    //   }
+    //   // return new Blob([uInt8Array], { type: 'application/pdf' })
+    //   let url = window.URL.createObjectURL(new Blob([uInt8Array], { type: 'application/pdf' }))
+    //   console.log(url, '要下载的地址以及文件bbb');
+    //   const a = document.createElement("a");
+    //   a.href = url;
+    //   a.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;//下载文件regid以及文件名字
+    //   document.body.appendChild(a);
+    //   a.click();
+    //   URL.revokeObjectURL(a.href);//URL.revokeObjectURL() 静态方法用来释放一个之前已经存在的
+    //   document.body.removeChild(a);//删除节点
+    // },
+  },
+
+  watch: {
+    $route(to, from) {
+      console.log(to.meta.title);
+      this.showTitle = to.meta.title;
+      if (this.$route.path == "/index") {
+        this.show = false;
+      } else {
+        this.show = true;
+      }
+    },
+  },
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.main-box {
+  border-left: 1px solid #e7e7e7;
+}
+
+.head {
+  width: 100%;
+  height: auto;
+  padding: 13px 20px;
+  box-sizing: border-box;
+  background-color: #27a7e0;
+  font-size: 18px;
+  font-family: PingFangSC-Medium, PingFang SC;
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ddd {
+  position: relative;
+}
+
+.fan {
+  /* background: rgb(255, 254, 254); */
+  position: absolute;
+  border: 1px solid #fff;
+  font-size: 12px;
+  top: 25%;
+  right: 5px;
+  white-space: nowrap;
+}
+
+.loading {
+  width: 100%;
+  height: 100%;
+  /* background: red; */
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+}
+
+.loadingone {
+  height: 100%;
+}
+.printDia {
+  .el-dialog__header {
+    display: none;
+  }
+  .el-dialog__body {
+    padding: 10px;
+    span {
+      display: flex;
+      flex-direction: column;
+      .el-button {
+        margin: 0;
+      }
+      .printRebort {
+        margin-top: 20px;
+      }
+    }
+  }
+  .el-dialog__footer {
+    padding: 10px;
+    text-align: center;
+  }
+}
+</style>

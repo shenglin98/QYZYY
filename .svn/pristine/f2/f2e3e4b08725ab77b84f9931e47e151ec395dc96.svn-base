@@ -1,0 +1,584 @@
+import api from '../../api/index'
+import NotFound from '../notFound/notfound.vue'
+import Cookies from 'js-cookie'
+import { checkH5Login, getUnitInfo } from "@/api/unit.js";
+import { getSysConfigInfo, dictionaryDicLoad, getListData, HealthCheckForH5Post } from "@/api/reservation.js";
+import { encryptDataReturn } from "@/utils/jumpRouteLink.js";
+import { getFiles } from '../../api/reservation';
+export default {
+    components: {
+        NotFound,
+        // Queries
+    },
+    data() {
+        return {
+            page: 1,
+            limit: 10000,
+            value: '985208', //985208//0619918//985208
+            query: false,
+            showTitle: "",
+            show: true,
+            loading: false,
+            dialogVisible: false,
+            showTitle: "",
+            active: 0,
+            searchName: "",
+            iconUrl1: require("@/assets/images/体检套餐.png"),
+            iconUrl2: require("@/assets/images/个检预约.png"),
+            iconUrl3: require("@/assets/images/报告查询.png"),
+            iconUrl4: require("@/assets/images/团检预约.png"),
+            iconUrl5: require("@/assets/images/联系我们.png"),
+            meccodebg: require("@/assets/images/背景.png"),
+            meccodebgtx: require("@/assets/images/人物.png"),
+            linkList: [],
+            operatorcode: "",
+            showDia: false,
+            meccodeItems: [],
+            meccode: "",
+            listData: [],
+            hseItem: [
+                '体检须知',
+                // '专病专栏',
+                // '在线咨询',
+                '关于中心',
+                // '专家资源',
+            ],
+            hospitalItems: [],
+            userList: [],
+            hospitalFlag: false,
+            useName: "",
+        }
+    },
+    created() {
+
+    },
+    computed: {
+        defaultOption() {
+            return {
+                step: 2, // 数值越大速度滚动越快
+                limitMoveNum: 2, // 开始无缝滚动的数据量 this.dataList.length
+                hoverStop: false, // 是否开启鼠标悬停stop
+                direction: 0, // 0向下 1向上 2向左 3向右
+                openWatch: true, // 开启数据实时监控刷新dom
+                singleHeight: 0, // 单步运动停止的高度(默认值0是无缝不停止的滚动) direction => 0/1
+                singleWidth: 0, // 单步运动停止的宽度(默认值0是无缝不停止的滚动) direction => 2/3
+                waitTime: 1000, // 单步运动停止的时间(默认值1000ms)
+            };
+        },
+    },
+    async mounted() {
+        if (this.$route.query.openid) {
+            localStorage.setItem('operatorcode', this.$route.query.openid)
+        }
+        this.operatorcode = localStorage.getItem("operatorcode") || "";
+        if (!this.operatorcode) {
+            this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+            this.$router.push("/login");
+            return false;
+        }
+        // this.title = this.GLOBAL.colorList;
+        this.showTitle = this.$route.meta.title || "体检系统";
+        getUnitInfo({ businesstype: "FirstPageFunc", code: this.operatorcode, id: location.href }).then(res => {
+            this.linkList = res.data.result;
+        })
+        getSysConfigInfo({ cc: "Sys_H5_CompanySearchPageShow" }).then((res) => {
+            // 获取条件计算日期范围回调
+            let flag = res.data.result
+            if (flag == 1) {
+                localStorage.setItem("isShowSearchUnit", 1);
+            } else {
+                localStorage.setItem("isShowSearchUnit", 0);
+            }
+        });
+        // 设置体检类型 personalflag: 0, // 0-个人  1-单位 
+        dictionaryDicLoad({ tableName: 'Dic_Medical_center' }).then(res => {
+            const promises = res.data.data.map(async (k) => {
+                const fileRes = await getFiles({ id: k.fileid });
+                k.fileUrl = fileRes.data.result && fileRes.data.result.fileUrl;
+                return k;
+            });
+
+            Promise.all(promises).then(results => {
+                this.$nextTick(() => {
+                    this.meccodeItems = results;
+                    this.hospitalItems = results;
+                })
+            })
+        })
+        this.handleHealthCheckForH5Post();
+    },
+    methods: {
+        // 跳转集合回调
+        handleButtonAll(codeindex) {
+            switch (codeindex) {
+                case '1':
+                    this.jumpReservation()
+                    break;
+                case '2':
+                    this.jumpReservation()
+                    break;
+                case '3':
+                    this.jumpReportQuery()
+                    break;
+                case '4':
+                    this.jumpGroupsCheck()
+                    break;
+                case '5':
+                    this.jumpGroupsGuidance()
+                    break;
+                case '6':
+                    this.jumpConsult()
+                    break;
+                case '7':
+                    this.jumpSynopsis()
+                    break;
+                // case '8':
+                //     break;
+                case '9':
+                    this.jumpCustomized();
+                    break;
+                default:
+                    break;
+            }
+        },
+        // 跳转到体检定制
+        jumpCustomized() {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            this.$router.push('/customized')
+        },
+        // 跳转到在线咨询
+        jumpConsult() {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            this.$router.push('/consult')
+        },
+        // 获取消息提示
+        handleHealthCheckForH5Post() {
+            HealthCheckForH5Post({
+                businesstype: "CurrentCheck",
+                whereitems: [{
+                    key: "operatorcode",
+                    value: this.operatorcode
+                },
+                {
+                    key: "source",
+                    value: "conclusion"
+                },
+                ]
+            }).then(res => {
+                this.listData =  res.data.result || [];
+            })
+        },
+        // 选择用户
+        handleSetSubmit(e) {
+            this.useName = e.target.innerText
+            this.hospitalFlag = false;
+        },
+        // 切换用户
+        togglUse() {
+            this.hospitalFlag = true;
+            getListData({
+                businesstype: "MyCheckPersonList",
+                code: this.operatorcode,
+                whereitems: [],
+            }).then((res) => {
+                if (!res.data.result) {
+                    this.userList = [];
+                    return;
+                }
+                this.userList = res.data.result;
+            });
+        },
+        handleHealthItem(item) {
+            switch (item) {
+                case '体检须知':
+                    break;
+                case '关于中心':
+                    this.jumpSynopsis('YYJJ')
+                    break;
+
+                default:
+                    break;
+            }
+        },
+        //  滚动到医院
+        goHospitalModel(href) {
+            let section = document.getElementById(href);
+            // 确保元素存在
+            if (section) {
+                // 滚动到元素位置
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+        // 轮播结束
+        ScrollEnd() {
+            console.log("ScrollEnd")
+        },
+        // 跳转单位查询信息
+        handleJumpUnitInfo() {
+            if (!this.searchName) {
+                this.$toast.fail("查询内容不允许为空!");
+                return;
+            }
+            let value = JSON.parse(JSON.stringify(this.searchName))
+            this.$router.push({ path: "/unitInfo", query: { search: value } })
+            this.searchName = "";
+        },
+
+        // 返回按钮
+        back() {
+            if (this.GLOBAL.colorList == "体检结果") {
+                // console.log('当前是体检结果 要改成我的体检');
+                this.GLOBAL.colorList = "我的体检";
+            } else {
+                this.GLOBAL.colorList = "体检服务";
+            }
+            this.$router.go(-1);
+        },
+        // 体格检查表
+        handleViewGuideSing() {
+            let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+            this.$router.push({
+                path: "/viewReport",
+                query: { printFlag: "体格检查表", regid: CurrentPerson.regid },
+            });
+            this.dialogVisible = false;
+        },
+        // 个人报告书
+        handleViewReport() {
+            let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+            this.$router.push({
+                path: "/viewReport",
+                query: { printFlag: "个人报告书", regid: CurrentPerson.regid },
+            });
+            this.dialogVisible = false;
+        },
+        handledownloadReport() {
+            let u = navigator.userAgent;
+            let isAndroid = u.indexOf("Android") > -1 || u.indexOf("Adr") > -1; //判断是否是 android终端
+            let isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/); //判断是否是 iOS终端
+            console.log(isAndroid, "isAndroid");
+            console.log(isIOS, "isIOS");
+            if (isAndroid) {
+                if (navigator.share) {
+                    navigator.share({
+                        title: this.GLOBAL.colorList,
+                        text: this.GLOBAL.colorList,
+                        url: `http://localhost:8080/#/viewReport?regid=${this.GLOBAL.codes}`,
+                        // url: "https://wx.gyey.com/NewGyey/tjxt/#/viewReport",
+                    });
+                }
+            }
+            if (isIOS) {
+                let fileurl = localStorage.getItem("fileurl") || "";
+                if (!fileurl) return;
+                const url = fileurl;
+                let fileName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+                // 请求进来，就可以加在loading
+                fetch(url)
+                    .then((res) => {
+                        return res.blob();
+                    })
+                    .then((blob) => {
+                        // 这是一个外部引用的download.js文件，这个文件
+                        download(blob, fileName);
+                        // 下载结束，loading结束
+                    })
+                    .catch((err) => {
+                        return false;
+                    })
+                    .finally((res) => {
+                        // 这里也可以结束loading。不管是成功失败，都会结束loading
+                        return true;
+                    });
+            }
+            return;
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            // let blobType = "application/force-download"; // 设置blob请求头
+            // let blob = new Blob([fileurl], { type: "application/pdf" }); // 创建blob 设置blob文件类型 data 设置为后端返回的文件(例如mp3,jpeg) type:这里设置后端返回的类型 为 mp3
+            // let downa = document.createElement("a"); // 创建A标签
+            // let href = window.URL.createObjectURL(blob); // 创建下载的链接
+            // downa.href = href; // 下载地址
+            // downa.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; // 下载文件名
+            // document.body.appendChild(downa);
+            // downa.click(); // 模拟点击A标签
+            // document.body.removeChild(downa); // 下载完成移除元素
+            // window.URL.revokeObjectURL(href); // 释放blob对象
+        },
+        handleClosePrintDia() {
+            this.dialogVisible = false;
+        },
+        // // 查看报告的点击事件
+        async View_report() {
+            this.dialogVisible = true;
+            return;
+            this.$router.push({ path: "/viewReport" });
+            // console.log(this.GLOBAL.codes,'jjjjjjjjjjjjjjjjjjjjj');
+            this.loading = true;
+            // console.log('View_report');
+            const { data } = await api.home.View_report({
+                fingercode: "",
+                codes: [this.GLOBAL.codes],
+                repname: "1、报告书",
+                filetype: "pdf",
+                outtype: "url",
+                whereitems: [],
+            });
+            this.loading = false;
+            // console.log("查询报告返回的数据", data.data[0].fileurl);
+            const url = data.data[0].fileurl;
+            const link = document.createElement("a");
+            link.href = url;
+            // link.download = "file.pdf"; // 下载文件的默认文件名
+            link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            // console.log("查询报告返回的数据", data.data[0].base64String);
+            // this.viewPdf(data.data[0].base64String);
+
+            // 将字符串转换为 ArrayBuffer
+            // const byteCharacters = atob(respData);
+            // const byteCharacters = atob(data.data[0].base64String);
+            // const byteNumbers = new Array(byteCharacters.length);
+            // for (let i = 0; i < byteCharacters.length; i++) {
+            //   byteNumbers[i] = byteCharacters.charCodeAt(i);
+            // }
+            // const byteArray = new Uint8Array(byteNumbers);
+            // const pdfBlob = new Blob([byteArray], { type: "application/pdf" });
+
+            // if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            //   // For Edge
+            //   window.navigator.msSaveOrOpenBlob(pdfBlob);
+            // } else {
+            //   // For other browsers
+            //   const url = URL.createObjectURL(pdfBlob);
+            //   const link = document.createElement("a");
+            //   link.href = url;
+            //   // link.download = "file.pdf"; // 下载文件的默认文件名
+            //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+            //   document.body.appendChild(link);
+            //   link.click();
+            //   document.body.removeChild(link);
+            // }
+        },
+        handleJumpReportQuery() {
+            let value = JSON.parse(JSON.stringify(this.searchName))
+            this.$router.push({
+                path: `/reportQuery`,
+                query: {
+                    'obj': value
+                }
+            })
+            this.searchName = "";
+        },
+        // 获取订单详情
+        async jumpReportQuery(flag) {
+            let flagJump = this.linkList.filter(k => {
+                return k.funccode == flag;
+            })[0];
+            if (flagJump && flagJump.funcstatus == 0) return;
+            if (this.value != '' || null || undefined) {
+                // this.GLOBAL.colorList = '我的体检'
+                // this.$router.push({
+                //   path:`/reportQuery`,
+                //   query:{ 
+                //     'obj': this.value
+                //   }
+                // }) 
+
+                this.$router.push({
+                    path: `/report`,
+                    // query:{ 
+                    //   'obj': this.value
+                    // }
+                })
+            } else {
+                this.query = true;
+
+            }
+
+
+            this.title = 'xxxxx'
+        },
+        // 点击确定遮罩层消失
+        determine() {
+            this.query = false;
+        },
+        // 跳转到医院简介
+        jumpSynopsis(flag) {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            let flagJump = this.linkList.filter(k => {
+                return k.funccode == flag;
+            })[0];
+            if (flagJump && flagJump.funcstatus == 0) return;
+            this.$router.push('/synopsis')
+        },
+        // 跳转到预约界面
+        jumpMedical() {
+            this.$router.push('/personalMedical')
+        },
+        // 跳转到预约界面
+        jumpGryy(code) {
+            if (!code) return;
+            this.showDia = false;
+            localStorage.setItem('personalflag', 0)
+            this.$router.push({ path: '/reservation', query: { meccode: code } })
+        },
+        // 跳转到预约界面
+        jumpReservation(flag) {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            localStorage.setItem('personalflag', 0)
+            this.$router.push('/reservation')
+            // // 设置体检类型 personalflag: 0, // 0-个人  1-单位 
+            // dictionaryDicLoad({ tableName: 'Dic_Medical_center' }).then(res => {
+            //     const promises = res.data.data.map(async(k) => {
+            //         const fileRes = await getFiles({ id: k.fileid });
+            //         k.fileUrl = fileRes.data.result && fileRes.data.result.fileUrl;
+            //         return k;
+            //     });
+
+            //     Promise.all(promises).then(results => {
+            //         this.$nextTick(() => {
+            //             this.meccodeItems = results;
+            //             this.hospitalItems = results;
+            //         })
+            //     })
+            // })
+        },
+        // 跳转到团检
+        jumpGroupsCheck(flag) {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            // 设置体检类型 personalflag: 0, // 0-个人  1-单位
+            localStorage.setItem('personalflag', 1)
+            this.$router.push('/unitReserva')
+        },
+        // 跳转到导诊
+        jumpGroupsGuidance(flag) {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            // 设置体检类型 personalflag: 0, // 0-个人  1-单位
+            // localStorage.setItem('personalflag', 1)
+            this.$router.push({
+                path: `/report`,
+                query: {
+                    'page': 'guidance'
+                }
+            })
+            // this.$router.push('/guidance')
+        },
+        // 联系我们
+        jumpContactUs() {
+            this.$dialog
+                .alert({
+                    title: "提示",
+                    message: `技术咨询及客服咨询电话：020-34152545`,
+                    confirmButtonText: "我知道了",
+                    confirmButtonColor: "#1989fa",
+                })
+                .then(() => { })
+                .catch(() => {
+                    // on cancel
+                });
+        },
+        // 跳转到活动预约
+        jumpPromotionCheck() {
+            if (!this.operatorcode) {
+                this.$toast.fail("当前人员未建档,请传入当前操作人编码!")
+                this.$router.push("/login");
+                return false;
+            }
+            // let flagJump = this.linkList.filter(k => {
+            //     return k.funccode == flag;
+            // })[0];
+            // if (flagJump && flagJump.funcstatus == 0) return;
+            // 设置体检类型 personalflag: 0, // 0-个人  1-单位
+            // localStorage.setItem('personalflag', 1)
+            this.$router.push('/promotion')
+            // this.$router.push('/unitReserva')
+        }
+    },
+    beforeDestroy() {
+
+    },
+    watch: {
+        $route: {
+            handler: function (val, oldVal) {
+                // this.getMyToken()
+                this.showTitle = val.meta.title;
+                if (this.$route.path == "/index") {
+                    this.show = false;
+                    // if (!localStorage.getItem("X-Token")) {
+                    //     checkH5Login({ AppKey: new Date().getTime() }).then(res => {
+                    //         let tempStr = res.data.licenseKey;
+                    //         const forLength = Array.from(Array(Math.ceil(tempStr.length / 100)));
+                    //         const slices = forLength.map((i, k) => {
+                    //             return tempStr.slice(k * 100, (k + 1) * 100);
+                    //         });
+                    //         let rsaArr = [];
+                    //         slices.forEach(k => {
+                    //             rsaArr.push(encryptDataReturn(k))
+                    //         })
+                    //         let licenseKey = rsaArr.join("~");
+                    //         res.data && localStorage.setItem("X-Token", res.data.token);
+                    //         res.data && localStorage.setItem("LICENSE-KEY", licenseKey);
+                    //     });
+                    // }
+                } else {
+                    this.show = true;
+                }
+                // if (oldVal.path != "/viewReport") {
+                //     this.$router.push({
+                //         path: "/",
+                //         query: { ts: Date.now(), openid: this.$route.query.openid }
+                //     })
+                // }
+            },
+            // 深度观察监听
+            deep: true
+        },
+    },
+    // beforeRouteEnter(to, from, next) { 
+    //     // 在路由进入之前保存滚动位置
+    //     if (from.name) {
+    //       const position = window.scrollY;
+    //       localStorage.setItem(from.name, position);
+    //       console.log(position,'position进来');
+    //     }
+    //     next();
+    //   },
+    // beforeRouteLeave(to, from, next) { 
+    //     // 在路由离开之前保存滚动位置
+    //     const position = window.scrollY;
+    //     localStorage.setItem(from.name, position);
+    //     console.log(position,'position离开');
+    //     next();
+    // },
+}

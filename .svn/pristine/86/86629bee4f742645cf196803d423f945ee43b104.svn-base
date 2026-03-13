@@ -1,0 +1,111 @@
+import api from '../../api/index'
+export default {
+  components: {
+    
+  },
+  data () {
+    return {
+        regid:'',   //路由传过来个人登记id
+        show:false,
+        userMessage:[],
+        appointmentDate:[], //预约日期
+        index:'',
+        title:'',
+        time:'',
+        timeid:''
+    }
+  },
+  created () {
+    this.regid = this.$route.query.regid
+    this.getSubscribeList()
+  },
+  mounted() {
+    this.getUserMsg()
+  },
+  methods: {
+    // 获取个人登记明细
+    async getUserMsg (){
+        const {data} = await api.home.CustomerRegisterDetail({
+            regid:this.regid
+        })
+        console.log(data);
+        if(data.result){
+            this.userMessage = data.result
+            console.log(this.userMessage,'222');
+        }
+    },
+    // 打开日历
+    openCalendar(){
+        this.show = true
+    },
+    tabSwitch(index,event){
+        console.log(index);
+        this.index = index
+        console.log(this.appointmentDate[index].title);
+        this.title = this.appointmentDate[index].title
+    },
+    timeProcess(arr) { //arr 为传入的数组形参
+        console.log(arr);
+        let weeks=['周日','周一','周二','周三','周四','周五','周六']
+        arr.forEach((item,index) => { //遍历
+            let newTime = item.title.substring(5,10)
+            let day = new Date(item.title) //读取时间
+            let week = weeks[day.getDay()] //读取周几
+            item.tabTitle = week+newTime
+        });
+        return arr //返回数据
+    },
+    getTimes(time,timeid){
+        console.log(time);
+        if(!this.index){
+            this.index = 0
+            this.title = this.appointmentDate[this.index].title
+            console.log(this.title);
+        }else{
+            console.log(this.title);
+        }
+        this.time = time
+        this.timeid = timeid
+        this.cancelTime()
+        this.saveTime()
+        this.show = false
+    },
+    // 获取体检预约假期列表
+    async getSubscribeList(){
+        const {data} = await api.home.AppointmentTimeStatic()
+        let list = this.timeProcess(data.result.dateitems)
+        console.log(this.appointmentDate);
+        this.appointmentDate = list
+        console.log(this.appointmentDate,'appointmentDate');
+        console.log(this.editableTabs,'editableTabs');
+    },
+    async saveTime(){
+        console.log(this.userMessage.regid);
+        console.log(this.userMessage.checkno);
+        console.log(this.title);
+        console.log(this.timeid,'444');
+        const {data} = await api.home.AppointmentSave({
+            regiditems:[this.userMessage.regid],
+            checknoitems:[this.userMessage.checkno],
+            selectdate:this.title,
+            timeid:this.timeid
+        })
+        console.log(data,'999');
+    },
+    async cancelTime(){
+        const {data} = api.home.AppointmentCancel(
+            [this.regid]
+        )
+        console.log(data);
+    }
+        
+        //方法调用
+        // let list =  timeProcess(arr) //arr为实参数组 list为处理后的数组
+  },
+  beforeDestroy(){
+    
+  },
+  watch: {
+    
+  },
+}

@@ -1,0 +1,1136 @@
+<template>
+  <div class="projectConfirm">
+    <div class="mainbody">
+      <div class="content">
+        <!-- 头部标题 -->
+        <div class="title">{{ setmealname || "" }}</div>
+        <!-- 卡片项目 金额信息 -->
+        <div class="project_mess">
+          <div class="mess_item">
+            <div class="mess_item_title">项目</div>
+            <div class="mess_item_content">{{ count || 0 }}个</div>
+          </div>
+          <!-- <div class="mess_item">
+            <div class="mess_item_title">共计</div>
+            <div class="mess_item_content">￥{{ totalPrice || 0 }}</div>
+          </div> -->
+          <!-- <div class="mess_item" v-if="personalflag == 1">
+            <div class="mess_item_title">个人支付</div>
+            <div class="mess_item_content">￥{{ personPrice || 0 }}</div>
+          </div> -->
+        </div>
+        <!-- 套餐外项目 -->
+        <div class="combine_box">
+          <div class="title">
+            自选项目（{{ [...selfcombineitems, ...selectArr].length || 0 }}）
+          </div>
+          <van-cell-group>
+            <van-cell
+              v-for="item in [...selfcombineitems, ...selectArr]"
+              :key="item.combinecode"
+            >
+              <template #title>
+                <span class="custom-title">{{ item.combinename }}</span>
+                <!-- <van-button
+                  type="warning"
+                  size="mini"
+                  @click="handleDelCombine(item)"
+                  >删除</van-button
+                > -->
+              </template>
+            </van-cell>
+            <!-- <van-cell
+              v-for="item in combineitems"
+              :key="item.combinecode"
+              :value="item.combinename"
+            /> -->
+          </van-cell-group>
+        </div>
+        <!-- 套餐内项目 -->
+        <div class="setmeal_box">
+          <div class="title">基础套餐（{{ setmealArr.length || 0 }}）</div>
+          <van-cell-group>
+            <div
+              class="forxunhuan_box"
+              v-for="item in setmealArr"
+              :key="item.combinecode"
+            >
+              <van-cell v-if="!displayNot.includes(item.deptcode)">
+                <template #title>
+                  <span class="custom-title">{{ item.combinename }}</span>
+                  <!-- <van-button
+                  type="warning"
+                  size="mini"
+                  @click="handleDelSetmeal(item)"
+                  >删除</van-button
+                > -->
+                </template>
+              </van-cell>
+            </div>
+            <!-- <van-cell
+              v-for="item in setmealArr"
+              :key="item.combinecode"
+              :value="item.combinename"
+            /> -->
+          </van-cell-group>
+        </div>
+      </div>
+      <!-- 底部支付信息 -->
+      <div class="footer">
+        <van-button
+          class="back"
+          v-if="setmealInfo && setmealInfo.grouptype != 0"
+          round
+          type="info"
+          size="small"
+          @click="handleReturnEdit"
+          >返回修改</van-button
+        >
+        <!-- <van-button
+          style="margin-right: 12px"
+          round
+          type="info"
+          size="small"
+          @click="handleAddFreeProject"
+          >我要加项</van-button
+        > -->
+        <van-button
+          v-if="isAllowAdd"
+          round
+          type="primary"
+          size="small"
+          @click="handleAddCombine"
+          >我要加项</van-button
+        >
+        <van-button round type="info" size="small" @click="handleConfirm"
+          >确认预约</van-button
+        >
+      </div>
+      <van-popup v-model="showAddCombine" style="width: 100%; height: 100%">
+        <div class="freeproject">
+          <!-- 头部搜索 -->
+          <van-search
+            v-model="searchValue"
+            shape="round"
+            placeholder="搜索项目"
+          />
+          <div class="mainbody">
+            <!-- 侧边栏 -->
+            <div class="sidebar_box">
+              <van-sidebar v-model="activeKey" @change="handleChangeSidebar">
+                <van-sidebar-item v-for="item in listData" :key="item.deptcode">
+                  <template #title>
+                    <div class="temp_box">
+                      <van-image
+                        class="title_icon"
+                        :src="`../../../static/image/${item.deptname}.png`"
+                      />
+                      <div class="title_name">{{ item.deptname }}</div>
+                    </div>
+                  </template>
+                </van-sidebar-item>
+              </van-sidebar>
+            </div>
+            <!-- 右侧选择项目内容 -->
+            <div class="project_box">
+              <van-checkbox-group
+                v-model="selectArr"
+                @change="handleChangeProject"
+              >
+                <van-cell-group>
+                  <van-cell
+                    v-for="(item, index) in chooseDeptData"
+                    clickable
+                    :key="item.combinecode"
+                    @click="handleToggle(index, item)"
+                  >
+                    <template #default>
+                      <div class="cname">{{ item.combinename }}</div>
+                      <div class="ctitle">{{ item.purpose }}</div>
+                      <div class="cprice">费用：￥{{ item.price }}</div>
+                    </template>
+                    <template #right-icon>
+                      <van-checkbox
+                        :name="item"
+                        ref="checkboxes"
+                        :disabled="checkArrBringOut.includes(item.combinecode)"
+                      />
+                    </template>
+                  </van-cell>
+                </van-cell-group>
+              </van-checkbox-group>
+            </div>
+            <!-- 底部支付信息 -->
+            <div class="footer">
+              <div class="footer_text">
+                <!-- <van-image class="footer_icon" :src="priceUrl" /> -->
+                <div class="yixuan">
+                  <div class="f_text">已选费用</div>
+                  <div class="f_price">￥{{ vpcheckPrice }}</div>
+                </div>
+                <div class="grzf" v-if="personalflag == 1">
+                  <div class="f_text">个人支付</div>
+                  <div class="f_price">￥{{ vppersonPrice }}</div>
+                </div>
+              </div>
+              <van-button
+                round
+                type="info"
+                size="small"
+                @click="handleAddSubmitCombine"
+                >确认</van-button
+              >
+            </div>
+          </div>
+        </div>
+      </van-popup>
+    </div>
+  </div>
+</template>
+<script>
+import { getSysConfigInfo, getListData } from "@/api/reservation.js";
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      setmealSource: [],
+      setmealcode: "",
+      setmealArr: [],
+      combineitems: [],
+      personalflag: "",
+      setmealInfo: null,
+      companyUserInfo: null,
+      setmealname: "",
+      checkPrice: 0,
+      personPrice: 0,
+      quota: 0,
+      totalPrice: 0,
+      showAddCombine: false,
+      searchValue: "",
+      selectArr: [],
+      activeKey: 0,
+      items: [
+        { text: "浙江", children: [], icon: "like" },
+        { text: "江苏", children: [], badge: 5 },
+      ],
+      listData: [],
+      chooseDept: [],
+      excludeArr: [],
+      imgUrl1: require("@/assets/images/肿瘤筛查项目.png"),
+      priceUrl: require("@/assets/images/药箱急救医疗.png"),
+      tempUrl: require("@/assets/images/其他项目.png"),
+      isBack: false,
+      checkFlag: false,
+      checkArrContain: [],
+      checkArrBringOut: [],
+      listDataCombin: [],
+      currentData: [],
+      clickCombinecode: "",
+      clickFlag: true,
+      vpcheckPrice: 0,
+      vppersonPrice: 0,
+      vpquota: 0,
+      vptotalPrice: 0,
+      delComCode: [],
+      fromPage: "",
+      displayNot: "",
+      selfcombineitems: [],
+      isAllowAdd: true,
+    };
+  },
+  computed: {
+    chooseDeptData() {
+      const search = this.searchValue;
+      if (search) {
+        return this.chooseDept.filter((data) => {
+          return Object.keys(data).some((key) => {
+            let containArr = ["combinename"];
+            if (containArr.includes(key)) {
+              return (
+                String(data[key]).toLowerCase().indexOf(search.toLowerCase()) >
+                -1
+              );
+            }
+          });
+        });
+      }
+      return this.chooseDept;
+    },
+    count() {
+      return this.setmealArr.length + this.selfcombineitems.length;
+    },
+    aapersonPrice() {
+      let price = 0;
+      let tempArr = [...this.setmealArr, ...this.combineitems];
+      if (this.personalflag == 1) {
+        if (this.setmealInfo.grouptype == -1) {
+          if (this.setmealInfo.addsettlementtype == 0) {
+            return +price.toFixed(3);
+          } else {
+            tempArr.forEach((k) => {
+              price += +k.price;
+            });
+            return +price.toFixed(3);
+          }
+        } else if (this.setmealInfo.grouptype == 1) {
+          if (this.setmealInfo.addsettlementtype == 0) {
+            return +price.toFixed(3);
+          } else {
+            tempArr.forEach((k) => {
+              price += +k.price;
+            });
+            return +price.toFixed(3);
+          }
+        } else if (this.setmealInfo.grouptype == 2) {
+          tempArr.forEach((k) => {
+            price += +k.price;
+          });
+          let rprice = +(+price - +this.setmealInfo.quota).toFixed(3);
+          return rprice > 0 ? rprice : 0;
+        }
+      }
+    },
+    aaprice() {
+      let price = 0;
+      this.setmealArr.forEach((k) => {
+        price += k.price;
+      });
+      this.combineitems.forEach((k) => {
+        price += k.price;
+      });
+      return price.toFixed(3);
+    },
+  },
+
+  async mounted() {
+    this.personalflag = localStorage.getItem("personalflag") || "";
+    this.companyUserInfo =
+      JSON.parse(localStorage.getItem("companyUserInfo")) || null;
+    let data = this.$route.query || undefined;
+    data.isBack && (this.isBack = data.isBack);
+    this.setmealcode = data.setmealcode || "";
+    if (data.combineitems) {
+      this.combineitems = JSON.parse(decodeURIComponent(data.combineitems));
+      this.currentData = JSON.parse(decodeURIComponent(data.combineitems));
+    }
+    if (data.selfcombineitems) {
+      this.selfcombineitems = JSON.parse(
+        decodeURIComponent(data.selfcombineitems)
+      );
+      // this.combineitems.push(
+      //   ...JSON.parse(decodeURIComponent(data.selfcombineitems))
+      // );
+    }
+    let freeDataSave = JSON.parse(localStorage.getItem("freeDataSave")) || [];
+    if (freeDataSave) {
+      this.selectArr = freeDataSave;
+    }
+    if (this.personalflag == 0) {
+      if (!this.setmealcode) {
+        this.$router.push("/setmealDetails");
+        return;
+      }
+      await getListData({
+        businesstype: "SetmealDetail",
+        code: this.setmealcode,
+      }).then((res) => {
+        let data = res.data.result;
+        this.setmealArr = data.combineitems;
+        this.currentData = data.combineitems;
+        this.setmealSource = JSON.parse(JSON.stringify(data.combineitems));
+        this.excludeArr = data.combineitems.map((k) => {
+          return k.combinecode;
+        });
+      });
+    } else {
+      let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.setmealInfo = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.currentData = this.setmealInfo.combineitems;
+      this.setmealArr = data.combineitems;
+      this.setmealSource = JSON.parse(JSON.stringify(data.combineitems));
+      // this.setmealcode = data.setmealcode || "";
+      // this.excludeArr = data.combineitems.map((k) => {
+      //   return k.combinecode;
+      // });
+    }
+    // ----------------------------------------------------------------
+    // this.personalflag = localStorage.getItem("personalflag") || "";
+    // let data = this.$route.query || undefined;
+    if (!data) {
+      this.$router.push("/freeProject");
+      return;
+    }
+    // this.setmealcode = data.setmealcode;
+    // this.combineitems = JSON.parse(decodeURIComponent(data.combineitems));
+    if (this.personalflag == 0) {
+      getListData({
+        businesstype: "SetmealDetail",
+        code: this.setmealcode,
+      }).then((res) => {
+        let data = res.data.result;
+        this.setmealArr = data.combineitems;
+        this.setmealSource = JSON.parse(JSON.stringify(data.combineitems));
+        this.setmealname = data.setmealname;
+      });
+    } else {
+      let data = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.setmealInfo = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.companyUserInfo =
+        JSON.parse(localStorage.getItem("companyUserInfo")) || null;
+      this.isAllowAdd = this.companyUserInfo.isAllowAdd;
+      this.setmealArr = data.combineitems;
+      this.setmealSource = JSON.parse(JSON.stringify(data.combineitems));
+      this.setmealname = data.setmealname;
+    }
+    getSysConfigInfo({ cc: "Sys_H5SelectCTCombinTakeCTCost" }).then((res) => {
+      // 获取条件计算日期范围回调
+      if (!res.data.result) {
+        this.checkFlag = false;
+        return;
+      }
+      this.checkFlag = true;
+      this.checkArrContain = res.data.result.split("|")[0].split(",");
+      this.checkArrBringOut = res.data.result.split("|")[1].split(",");
+    });
+    getSysConfigInfo({ cc: "Sys_Deptcode_Not_DepartmentForH5" }).then((res) => {
+      if (!res.data.result) return;
+      this.displayNot = res.data.result.split(",");
+    });
+    this.handleGetPriceItems();
+  },
+
+  methods: {
+    // 点击我要加项
+    handleAddFreeProject() {
+      this.$router.push({
+        path: "/freeProject",
+        query: {
+          setmealcode: this.setmealcode,
+          isBack: true,
+          combineitems: encodeURIComponent(JSON.stringify(this.combineitems)),
+        },
+      });
+    },
+    // 点击添加项目回调
+    handleAddSubmitCombine() {
+      console.log(this.selectArr);
+      localStorage.setItem("freeDataSave", JSON.stringify(this.selectArr));
+      this.handleGetPriceItems();
+      this.showAddCombine = false;
+      // let inSetmeal = this.setmealSource.map((k) => {
+      //   return k.combinecode;
+      // });
+      // for (let i = 0; i < this.selectArr.length; i++) {
+      //   if (inSetmeal.includes(this.selectArr[i].combinecode)) {
+      //     this.setmealArr.push(this.selectArr[i]);
+      //   } else {
+      //     this.combineitems.push(this.selectArr[i]);
+      //   }
+      // }
+      // let map = new Map();
+      // for (let item of this.combineitems) {
+      //   map.set(item.combinecode, item);
+      // }
+      // this.combineitems = [...map.values()];
+      // this.handleGetPriceItems();
+      // this.showAddCombine = false;
+    },
+    // 获取组合集合
+    handleGetListData() {
+      let whereitems = [];
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "sex",
+          value: 0,
+        });
+        // 个人
+      } else {
+        // 单位
+        whereitems.push({
+          key: "companycode",
+          value: this.companyUserInfo.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.companyUserInfo.batch,
+        });
+        whereitems.push({
+          key: "sex",
+          value: this.companyUserInfo.sex,
+        });
+      }
+      getListData({
+        businesstype: "CombineList",
+        whereitems,
+      }).then((res) => {
+        // this.listData = res.data.result;
+        let tempData = res.data.result;
+        for (let i = 0; i < tempData.length; i++) {
+          tempData[i].combinitems = tempData[i].combinitems.filter((k) => {
+            return !this.excludeArr.includes(k.combinecode);
+          });
+        }
+        tempData.forEach((k) => {
+          if (k.combinitems.length > 0) {
+            this.listDataCombin.push(...k.combinitems);
+          }
+        });
+        this.chooseDept = tempData[0].combinitems.filter((k) => {
+          return !this.excludeArr.includes(k.combinecode);
+        });
+        this.listData = tempData;
+        // this.chooseDept = this.listData[0].combinitems.filter((k) => {
+        //   return !this.excludeArr.includes(k.combinecode);
+        // });
+        this.$nextTick(() => {
+          let mapArr = this.selectArr.map((k) => {
+            return k.combinecode;
+          });
+          this.selectArr = [];
+          tempData.forEach((item) => {
+            item.combinitems.forEach((k) => {
+              if (mapArr.includes(k.combinecode)) {
+                this.selectArr.push(k);
+              }
+            });
+          });
+          console.log(this.selectArr);
+          this.handleGetPriceItems();
+          this.showAddCombine = true;
+        });
+      });
+    },
+    // 点击添加项目按钮回调
+    handleAddCombine() {
+      // this.excludeArr = [...this.combineitems, ...this.setmealArr].map((k) => {
+      //   return k.combinecode;
+      // });
+      this.handleGetListData();
+    },
+    // 删除套餐外项目回调
+    handleDelCombine(item) {
+      this.$dialog
+        .confirm({
+          title: "注意",
+          message: `确认删除当前项目【${item.combinename}】吗?`,
+          confirmButtonText: "确认",
+          confirmButtonColor: "#1989fa",
+        })
+        .then(() => {
+          let index = this.combineitems.findIndex(
+            (k) => k.combinecode === item.combinecode
+          );
+          index > -1 && this.combineitems.splice(index, 1);
+          this.$router.push({
+            path: "/projectConfirm",
+            query: {
+              setmealcode: this.setmealcode,
+              combineitems: encodeURIComponent(
+                JSON.stringify(this.combineitems)
+              ),
+            },
+          });
+          this.handleGetPriceItems();
+          this.$toast.success("操作成功!");
+        })
+        .catch(() => {});
+    },
+    // 删除套餐内项目回调
+    handleDelSetmeal(item) {
+      this.$dialog
+        .confirm({
+          title: "注意",
+          message: `确认删除当前项目【${item.combinename}】吗?`,
+          confirmButtonText: "确认",
+          confirmButtonColor: "#1989fa",
+        })
+        .then(() => {
+          let flag = this.setmealArr.filter(
+            (k) => k.combinecode === item.combinecode
+          )[0];
+          if (flag) {
+            let index = this.setmealArr.findIndex(
+              (k) => k.combinecode === flag.combinecode
+            );
+            this.setmealArr.splice(index, 1);
+            this.delComCode.push(flag.combinecode);
+            localStorage.setItem("delComCode", JSON.stringify(this.delComCode));
+          }
+          this.handleGetPriceItems();
+          this.$toast.success("操作成功!");
+        })
+        .catch(() => {});
+    },
+    // 获取价格接口回调
+    handleGetPriceItems() {
+      let whereitems = [];
+      // let combinecodes = this.combineitems.map((k) => {
+      //   return k.combinecode;
+      // });
+      let combinecodes = [...this.selfcombineitems, ...this.selectArr].map(
+        (k) => {
+          return k.combinecode;
+        }
+      );
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+      } else {
+        whereitems.push({
+          key: "regid",
+          value: this.companyUserInfo.regid,
+        });
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+        whereitems.push({
+          key: "companycode",
+          value: this.companyUserInfo.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.companyUserInfo.batch,
+        });
+        whereitems.push({
+          key: "groupcode",
+          value: this.companyUserInfo.groupcode,
+        });
+      }
+      getListData({
+        businesstype: "CostInfo",
+        whereitems,
+      }).then((res) => {
+        if (!res.data.result) return;
+        let data = res.data.result;
+        this.checkPrice = data.checkPrice;
+        this.personPrice = data.personPrice;
+        this.quota = data.quota;
+        this.totalPrice = data.totalPrice;
+        if (data.removeCombines && data.removeCombines.length > 0) {
+          this.setmealArr = this.setmealArr.filter((k) => {
+            return !data.removeCombines.includes(k.combinecode);
+          });
+        }
+      });
+    },
+    // 获取价格接口回调
+    handleGetPriceItemsVP() {
+      let whereitems = [];
+      let combinecodes = this.selectArr.map((k) => {
+        return k.combinecode;
+      });
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+      } else {
+        whereitems.push({
+          key: "regid",
+          value: this.companyUserInfo.regid,
+        });
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+        whereitems.push({
+          key: "companycode",
+          value: this.companyUserInfo.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.companyUserInfo.batch,
+        });
+        whereitems.push({
+          key: "groupcode",
+          value: this.companyUserInfo.groupcode,
+        });
+      }
+      getListData({
+        businesstype: "CostInfo",
+        whereitems,
+      }).then((res) => {
+        if (!res.data.result) return;
+        let data = res.data.result;
+        this.vpcheckPrice = data.checkPrice;
+        this.vppersonPrice = data.personPrice;
+        this.vpquota = data.quota;
+        this.vptotalPrice = data.totalPrice;
+      });
+    },
+    handleConfirm() {
+      this.$router.push({
+        path: "/reservaInfo",
+        query: {
+          setmealcode: this.setmealcode,
+          combineitems: encodeURIComponent(
+            JSON.stringify([...this.selfcombineitems, ...this.selectArr])
+          ),
+        },
+      });
+      // this.$router.push({
+      //   path: "/reservaInfo",
+      //   query: {
+      //     setmealcode: this.setmealcode,
+      //     combineitems: encodeURIComponent(JSON.stringify(this.combineitems)),
+      //   },
+      // });
+    },
+    // 返回修改项目
+    handleReturnEdit() {
+      // path: this.fromPage || "/freeProject",
+      this.$router.push({
+        path: "/selfselection",
+        query: {
+          setmealcode: this.setmealcode,
+          isBack: true,
+          selfcombineitems: encodeURIComponent(
+            JSON.stringify(this.selfcombineitems)
+          ),
+        },
+      });
+    },
+    // 立即预约回调
+    handleReservation() {
+      if (this.personalflag == 1 && this.quota > 0 && this.personPrice > 0) {
+        this.$dialog
+          .alert({
+            title: "注意事项",
+            message: `当前订单额度超出￥${this.personPrice}，请调整项目后再进行预约`,
+            confirmButtonText: "我知道了",
+            confirmButtonColor: "#1989fa",
+          })
+          .then(() => {})
+          .catch(() => {
+            // on cancel
+          });
+      } else {
+        this.$router.push({
+          path: "/projectConfirm",
+          query: {
+            setmealcode: this.setmealcode,
+            combineitems: encodeURIComponent(JSON.stringify(this.selectArr)),
+          },
+        });
+      }
+    },
+    handleChangeProject(arr) {
+      // arr 勾选数据
+      // this.checkArrContain  配置左边包含数据
+      // this.checkArrBringOut  配置右边需要带出材料费
+      // this.listDataCombin  组合集合
+      // let arr = JSON.parse(JSON.stringify(arr1));
+      // if (
+      //   arr.findIndex((t) => this.checkArrContain.includes(t.combinecode)) > -1
+      // ) {
+      //   var tempArr = this.listDataCombin.findIndex((t) =>
+      //     this.checkArrBringOut.includes(t.combinecode)
+      //   );
+
+      //   if (tempArr > -1) {
+      //     arr.push(this.listDataCombin[tempArr]);
+      //   }
+      // }
+      let tipsArr = [];
+      let flag = arr.filter((k) => k.combinecode === this.clickCombinecode)[0];
+      if (flag && flag.rejectcombineitems && this.clickFlag) {
+        let temp = [...this.currentData, ...arr];
+        for (let i = 0; i < flag.rejectcombineitems.length; i++) {
+          let resFlag = temp.filter(
+            (k) => k.combinecode === flag.rejectcombineitems[i].combinecode
+          )[0];
+          resFlag && tipsArr.push(resFlag);
+          // resFlag && tipsArr.push(flag.rejectcombineitems[i]);
+        }
+        if (tipsArr.length > 0) {
+          let tipsName = tipsArr.map((k) => {
+            return k.combinename;
+          });
+          this.$dialog
+            .confirm({
+              title: "提醒",
+              message: `您当前选择的（${
+                flag.combinename
+              }）项目和（${tipsName.join(
+                "、"
+              )}）项目检查内容类似，是否确定选择该项目?`,
+              confirmButtonColor: "#1989fa",
+            })
+            .then(() => {
+              // on confirm
+              arr.splice(arr.length - 1, 1);
+            })
+            .catch(() => {
+              // on cancel
+              arr.splice(arr.length - 1, 1);
+            });
+        }
+      }
+      // --------------------------
+      let isResidue = false;
+      for (let i = 0; i < arr.length; i++) {
+        let index = this.checkArrContain.findIndex((k) => {
+          return k == arr[i].combinecode;
+        });
+        index > -1 && (isResidue = true);
+      }
+      if (arr.length > 0 && !isResidue) {
+        for (let i = 0; i < arr.length; i++) {
+          for (let j = 0; j < this.checkArrBringOut.length; j++) {
+            if (arr[i].combinecode == this.checkArrBringOut[j]) {
+              arr.splice(i, 1, {});
+            }
+          }
+        }
+        this.selectArr = arr;
+      } else {
+        this.selectArr = arr;
+      }
+      if (this.checkFlag && arr.length > 0) {
+        let flag = false;
+        let tempArr = [];
+        for (let i = 0; i < arr.length; i++) {
+          if (this.checkArrContain.includes(arr[i].combinecode)) {
+            flag = true;
+          }
+        }
+        if (flag) {
+          tempArr = this.listDataCombin.filter((k) => {
+            return this.checkArrBringOut.includes(k.combinecode);
+          });
+          if (tempArr.length > 0) {
+            for (let i = 0; i < tempArr.length; i++) {
+              let index = arr.findIndex((k) => {
+                return k.combinecode == tempArr[i].combinecode;
+              });
+              index == -1 && arr.push(tempArr[i]);
+            }
+          }
+          this.selectArr = arr;
+        }
+      } else {
+        this.selectArr = arr;
+      }
+      this.handleGetPriceItemsVP();
+      // let price = 0;
+      // for (let i = 0; i < arr.length; i++) {
+      //   price += +arr[i].price;
+      // }
+      // price += this.setmealInfo.setmealprice;
+      // if (this.setmealInfo.grouptype == 2 && this.setmealInfo.quota < price) {
+      //   this.$toast.fail("自选项目超出定额!");
+      //   arr.pop();
+      //   return;
+      // } else {
+      //   this.selectArr = arr;
+      // }
+    },
+    handleToggle(index, item) {
+      this.$refs.checkboxes[index].toggle(false);
+
+      if (!!item.dialogWarn && !this.$refs.checkboxes[index].checked) {
+        this.$dialog
+          .confirm({
+            message: item.dialogWarn,
+            confirmButtonText: "同意",
+            cancelButtonText: "不同意",
+          })
+          .then(() => {
+            this.handleItemToggle(index, item);
+            this.$refs.checkboxes[index].toggle();
+          })
+          .catch(() => {
+            this.$refs.checkboxes[index].toggle(false);
+          });
+      } else {
+        this.handleItemToggle(index, item);
+        this.$refs.checkboxes[index].toggle();
+      }
+      // this.clickCombinecode = this.$refs.checkboxes[index].name.combinecode;
+      // this.clickFlag = !this.$refs.checkboxes[index].checked;
+      // this.$refs.checkboxes[index].toggle();
+    },
+    handleItemToggle(index, item) {
+      this.clickCombinecode = this.$refs.checkboxes[index].name.combinecode;
+      this.clickFlag = !this.$refs.checkboxes[index].checked;
+    },
+    // 切换tabs
+    handleChangeSidebar(index) {
+      this.chooseDept = this.listData[index].combinitems.filter((k) => {
+        return !this.excludeArr.includes(k.combinecode);
+      });
+    },
+  },
+
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      vm.fromPage = from.path;
+    });
+  },
+};
+</script>
+<style lang='scss' scoped>
+.projectConfirm {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  .mainbody {
+    position: relative;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 5px;
+    .content::-webkit-scrollbar {
+      display: none;
+    }
+    .content {
+      box-sizing: border-box;
+      height: 100%;
+      background-color: #fff;
+      border-radius: 6px;
+      overflow-y: auto;
+      padding-bottom: 50px;
+      .title {
+        height: 45px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        font-weight: 600;
+        color: #000;
+        border-bottom: 1px solid #eee;
+      }
+      .project_mess {
+        box-sizing: border-box;
+        height: 90px;
+        background: #27a7e0;
+        border-radius: 6px;
+        margin: 8px 8px 0 8px;
+        display: flex;
+        align-items: center;
+        .mess_item {
+          width: 50%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          .mess_item_title {
+            color: #fff;
+            font-size: 16px;
+          }
+          .mess_item_content {
+            margin-top: 8px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .combine_box {
+        .title {
+          height: 38px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: #000;
+          border-bottom: 1px solid #eee;
+        }
+      }
+      .setmeal_box {
+        .title {
+          height: 38px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: #000;
+          border-bottom: 1px solid #eee;
+        }
+      }
+      .combine_box,
+      .setmeal_box {
+        .van-cell {
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+        }
+        .van-cell__title {
+          display: flex;
+          align-items: center;
+          .custom-title {
+            width: 85%;
+          }
+          .van-button {
+            width: 15%;
+          }
+        }
+      }
+    }
+    .footer {
+      width: 100%;
+      box-sizing: border-box;
+      height: 45px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      .van-button {
+        width: 90px;
+        margin-right: 12px;
+      }
+      .van-button.back {
+        // margin-right: 50px;
+        background-color: #7c8586;
+        border: 1px solid #7c8586;
+      }
+    }
+  }
+}
+.freeproject {
+  height: 100vh;
+  background-color: #f2f2f2;
+  .mainbody {
+    height: calc(100vh - 56px);
+    padding-bottom: 50px;
+    box-sizing: border-box;
+    display: flex;
+    position: relative;
+    .sidebar_box::-webkit-scrollbar {
+      display: none;
+    }
+    .sidebar_box {
+      width: 30%;
+      overflow-y: auto;
+      .van-sidebar {
+        width: 100%;
+        .van-sidebar-item {
+          padding: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .temp_box {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          .title_icon {
+            width: 40px;
+            height: 40px;
+          }
+          .title_name {
+            font-weight: 600;
+            color: #000;
+          }
+        }
+      }
+    }
+    .project_box::-webkit-scrollbar {
+      display: none;
+    }
+    .project_box {
+      width: 70%;
+      overflow-y: auto;
+      background-color: #fff;
+      .van-cell {
+        align-items: flex-start !important;
+        .cname {
+          font-size: 15px;
+          font-weight: 600;
+          color: #000;
+        }
+        .ctitle {
+          color: #969799;
+        }
+        .cprice {
+          color: #ffa113;
+        }
+      }
+    }
+    .footer {
+      width: 100%;
+      box-sizing: border-box;
+      height: 45px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      justify-content: space-between;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      .van-button {
+        width: 24%;
+      }
+      .footer_text {
+        display: flex;
+        width: 80%;
+        flex-wrap: wrap;
+        .fttop,
+        .ftbtm {
+          display: flex;
+          align-items: center;
+        }
+        .yixuan,
+        .grzf,
+        .dwde,
+        .xmhj {
+          width: 50%;
+          display: flex;
+          align-items: center;
+        }
+        .footer_icon {
+          width: 26px;
+          height: 26px;
+          margin-right: 14px;
+        }
+        .f_price {
+          color: red;
+          font-weight: 600;
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}
+</style>

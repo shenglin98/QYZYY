@@ -1,0 +1,49 @@
+exports.default = {
+    message: {
+        login: '登录',
+        language: "语言",
+        otherLanguages:"其他语言",
+        signOut:"退出登陆",
+        addLanguage:'添加',
+        languageName:'语言名称',
+        languageRemarks:'语言备注',
+        exportLanguage:'导出语言包',
+        pleaseName:'请输入语言名称',
+        pleaseNote:'请输入语言备注',
+        name:'语言名称',
+        mark:'语言备注'
+    },
+    from:{
+        translateText:'翻译文本',
+        englishDescription:'英文描述',
+        chineseDescription:'中文描述',
+        languagePackSubkey:'语言包子键名',
+        inputFormat:'输入格式为字母或字母和下划线组合，比如：a或a_b',
+        languageAllPack:'语言包全键名',
+        uploadImage:'上传图片',
+        clickUpload:'点击上传',
+        onlyUploaded:'只能上传jpg/png文件',
+        originalImage:'原图',
+        enlarge:'放大',
+        mark:'标记',
+        markerMap:'标记图',
+        cancel:'取消',
+        submit:'提交',
+        confirm:'确认',
+        placeholder:"中英文描述至少填写一个",
+        placeholderen:"，英文单词用空格分隔"
+    },
+    login:{
+        login:'登陆',
+        pleaseUsername:'请输入账号',
+        pleasePassword:'请输入密码',
+        cancel:'取消',
+        confirm:'确认',
+    },
+    modular:{
+        add:'添加',
+        addTranslation:'添加翻译',
+        cancel:'取消',
+        submit:'提交',
+    }
+}

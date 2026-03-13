@@ -1,0 +1,336 @@
+<template>
+  <div class="selectGroup">
+    <div class="mainbody">
+      <!-- 数据列表下拉刷新 -->
+      <div class="list_content">
+        <van-pull-refresh v-model="isLoading" @refresh="handleListRefresh">
+          <van-list
+            :immediate-check="false"
+            v-model="listLoading"
+            :finished="finished"
+            finished-text="没有更多了"
+            @load="handleLoadList"
+          >
+            <div
+              class="list_item"
+              v-for="item in listData"
+              :key="item.groupcode"
+              @click="handleLookGroupDetails(item)"
+            >
+              <div class="item_left">
+                <div class="item_text_box">
+                  <div class="item_title">{{ item.groupname }}</div>
+                  <!--<div class="item_price">￥{{ item.price }}</div>-->
+                </div>
+              </div>
+              <div class="item_right">
+                <div class="item_text_box">
+                  <van-icon name="arrow" />
+                  <div class="item_num">
+                    {{ item.combineitems.length || 0 }}项
+                  </div>
+                </div>
+              </div>
+            </div>
+          </van-list>
+        </van-pull-refresh>
+      </div>
+      <van-popup
+        v-model="showDetails"
+        round
+        position="bottom"
+        :style="{ height: '90%' }"
+      >
+        <div class="content">
+          <!-- 标题 -->
+          <div class="title_b">
+            <div class="title_text">套餐项目</div>
+          </div>
+          <!-- 套餐项 -->
+          <div class="content_list" v-if="chooseGroup">
+            <div
+              class="content_item"
+              v-for="item in chooseGroup.combineitems"
+              :key="item.combinecode"
+            >
+              <div class="citem_title">{{ item.combinename }}</div>
+              <div class="citem_box" v-if="item.remark">
+                <div class="remark">检查意义：{{ item.remark }}</div>
+                <!-- <div class="remind">注意事项：{{ item.remind }}</div> -->
+              </div>
+            </div>
+          </div>
+          <!-- 按钮组 -->
+          <div class="btn_box">
+            <van-button
+              round
+              type="info"
+              @click="(showDetails = false), (chooseGroup = undefined)"
+              >关 闭</van-button
+            >
+            <van-button round type="info" @click="handleSelectGroup"
+              >选 中</van-button
+            >
+          </div>
+        </div>
+      </van-popup>
+    </div>
+  </div>
+</template>
+<script>
+import { getUnitInfo } from "@/api/unit.js";
+
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      isLoading: false,
+      listLoading: false,
+      finished: false,
+      currentPage: 1,
+      pageSize: 20,
+      listData: [],
+      search: "",
+      showDetails: false,
+      chooseGroup: undefined,
+      sex: 0,
+      age: 0,
+    };
+  },
+
+  mounted() {
+    this.search = this.$route.query.search || "";
+    this.sex = this.$route.query.sex || 0;
+    this.age = this.$route.query.age || 0;
+    if (!this.search) {
+      this.$toast.fail("获取查询信息失败!");
+      return;
+    }
+    this.handleGetListData();
+  },
+
+  methods: {
+    // 点击选中项目
+    handleSelectGroup() {
+      let tempStr = [];
+      for (let i = 0; i < this.chooseGroup.combineitems.length; i++) {
+        if (
+          this.chooseGroup.combineitems[i].sex != this.sex &&
+          this.chooseGroup.combineitems[i].sex != 0
+        ) {
+          tempStr.push(this.chooseGroup.combineitems[i].combinename);
+        }
+      }
+      if (tempStr.length > 0) {
+        this.$toast.fail(
+          `所选项目中的性别不符，当前人员的性别为:男,不符合的组合项目: ${tempStr.join(
+            "、"
+          )}`
+        );
+        return;
+      } else {
+        this.$router.push({
+          path: "unitInfo",
+          query: {
+            search: this.search,
+            selectGroup: encodeURIComponent(JSON.stringify(this.chooseGroup)),
+          },
+        });
+      }
+    },
+    // 点击查看详情
+    handleLookGroupDetails(item) {
+      console.log(item);
+      if (!item) return;
+      this.chooseGroup = item;
+      this.showDetails = true;
+    },
+    // 下拉刷新回调列表
+    handleListRefresh() {
+      // 清空列表数据
+      this.currentPage = 1;
+      this.pageSize = 20;
+      // 重新加载数据
+      // 将 loading 设置为 true，表示处于加载状态
+      this.finished = false;
+      this.isLoading = true;
+      this.listLoading = true;
+      this.handleGetListData();
+    },
+    // 下拉列表刷新回调列表
+    handleLoadList() {
+      this.pageSize = this.pageSize + 20;
+      this.handleGetListData();
+    },
+    // 主页数据回调
+    handleGetListData() {
+      getUnitInfo({
+        businesstype: "CompanyRegisterInfo",
+        code: this.search,
+      }).then((res) => {
+        if (!res.data.result) {
+          this.listData = [];
+          this.isLoading = false;
+          this.listLoading = false;
+          this.currentPage = 1;
+          this.pageSize = 20;
+          this.finished = true;
+          return;
+        }
+        this.listData = res.data.result.groupitems;
+        // this.listData = res.data.result.groupitems.filter((k) => {
+        //   return k.sex == this.sex || k.sex == 0;
+        // });
+        this.isLoading = false;
+        this.listLoading = false;
+        if (this.pageSize >= res.data.count) {
+          this.finished = true;
+        }
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.selectGroup {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 5px;
+  .mainbody::-webkit-scrollbar {
+    display: none;
+  }
+  .mainbody {
+    height: 100%;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding-bottom: 40px;
+    // background-color: #fff;
+    // border-radius: 5px;
+    overflow-y: auto;
+    border-radius: 6px;
+    .list_content {
+      height: calc(100vh - 183px);
+      background-color: #fff;
+      .van-pull-refresh {
+        height: 100%;
+        width: 100%;
+        overflow-y: auto;
+
+        .van-list {
+          // height: 100%;
+          // width: 100%;
+          // overflow-y: auto;
+        }
+        .list_item {
+          height: 65px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 1px solid #e3e3e3;
+          margin: 0 10px;
+          .item_left {
+            display: flex;
+            font-size: 14px;
+            font-weight: 600;
+            max-width: 80%;
+            .item_text_box {
+              margin: 8px 0 0 10px;
+              .item_price {
+                color: red;
+                margin-top: 10px;
+              }
+            }
+          }
+          .item_right {
+            .item_text_box {
+              margin: 8px 0 0 10px;
+              font-size: 14px;
+              font-weight: 600;
+              text-align: right;
+              color: #ababab;
+              .item_num {
+                color: red;
+                margin-top: 10px;
+              }
+            }
+          }
+        }
+      }
+    }
+    .van-popup {
+      .content {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+      }
+    }
+    .title_b {
+      height: 38px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      .title_text {
+        width: 90px;
+        height: 28px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f2f2f2;
+        border-radius: 20px;
+      }
+    }
+    .content_list {
+      height: 72%;
+      overflow-y: auto;
+      .content_item {
+        margin-top: 10px;
+        .citem_title {
+          width: 100%;
+          height: 35px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 600;
+          background-color: #d7d5d5;
+        }
+        .citem_box {
+          width: 100%;
+          display: flex;
+          background-color: #f2f2f2;
+          .remark,
+          .remind {
+            // width: 50% !important;
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            min-height: 35px;
+            word-wrap: break-word;
+            word-break: break-all;
+            font-size: 14px;
+          }
+        }
+      }
+    }
+    .btn_box {
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      .van-button {
+        width: 35%;
+      }
+    }
+  }
+}
+</style>

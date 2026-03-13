@@ -1,0 +1,510 @@
+<template>
+  <div class="reservation">
+    <div class="search_box">
+      <van-popover
+        v-model="showPopoverSex"
+        trigger="click"
+        :actions="sexItems"
+        :offset="[20, 8]"
+        @select="handleChangeSex"
+      >
+        <template #reference>
+          <!-- <van-button type="primary">展示图标</van-button> -->
+          <div class="search_item">
+            <div class="title">性别</div>
+            <div class="click_btn">
+              {{ sexCn }}<van-icon name="arrow-down" />
+            </div>
+          </div>
+        </template>
+      </van-popover>
+      <van-popover
+        v-model="showPopoverType"
+        trigger="click"
+        :actions="typeItems"
+        :offset="[20, 8]"
+        @select="handleChangeSettype"
+      >
+        <template #reference>
+          <!-- <van-button type="primary">展示图标</van-button> -->
+          <div class="search_item">
+            <div class="title">类型</div>
+            <div class="click_btn">
+              {{ settypeCn }}<van-icon name="arrow-down" />
+            </div>
+          </div>
+        </template>
+      </van-popover>
+      <div class="search_item" @click="handleChangePriceorderby">
+        <div class="title">价格</div>
+        <van-icon name="exchange" />
+      </div>
+      <div class="search_item" @click="showSearchAll = true">
+        <div class="title">筛选</div>
+        <van-icon name="filter-o" />
+      </div>
+    </div>
+    <div class="content_text">套餐列表</div>
+    <!-- 数据列表下拉刷新 -->
+    <div class="list_content">
+      <van-pull-refresh v-model="isLoading" @refresh="handleListRefresh">
+        <van-list
+          :immediate-check="false"
+          v-model="listLoading"
+          :finished="finished"
+          finished-text="没有更多了"
+          @load="handleLoadList"
+        >
+          <div
+            class="list_item"
+            v-for="item in listData"
+            :key="item.setmealcode"
+            @click="handleCheckSetmealDetails(item)"
+          >
+            <div class="item_left">
+              <van-image :src="item.setmealurl || tempUrl" />
+              <div class="item_text_box">
+                <div class="item_title">{{ item.setmealname }}</div>
+                <div class="item_price">￥{{ item.setmealprice }}</div>
+              </div>
+            </div>
+            <div class="item_right">
+              <div class="item_text_box">
+                <van-icon name="arrow" />
+                <div class="item_num">{{ item.setmealcombincount }}项</div>
+              </div>
+            </div>
+          </div>
+        </van-list>
+      </van-pull-refresh>
+    </div>
+    <!-- 弹出层 -->
+    <!-- @cancel="handleResetCondition"
+      @close="handleResetCondition" -->
+    <van-action-sheet v-model="showSearchAll" title="全部筛选">
+      <div class="content">
+        <div class="sex_box">
+          <div class="title">性 别</div>
+          <div class="btn_group">
+            <van-button
+              :class="[sex == 0 ? '' : 'btn_bgc']"
+              :type="sex == 0 ? 'info' : 'default'"
+              size="small"
+              @click="sex = 0"
+              >通用</van-button
+            >
+            <van-button
+              :class="[sex == 1 ? '' : 'btn_bgc']"
+              :type="sex == 1 ? 'info' : 'default'"
+              size="small"
+              @click="sex = 1"
+              >男性适用</van-button
+            >
+            <van-button
+              :class="[sex == 2 ? '' : 'btn_bgc']"
+              :type="sex == 2 ? 'info' : 'default'"
+              size="small"
+              @click="sex = 2"
+              >女性适用</van-button
+            >
+          </div>
+        </div>
+        <div class="sex_box">
+          <div class="title">价 格</div>
+          <div class="btn_group">
+            <van-button
+              :class="[pircerange == '0-1000' ? '' : 'btn_bgc']"
+              :type="pircerange == '0-1000' ? 'info' : 'default'"
+              size="small"
+              @click="pircerange = '0-1000'"
+              >1000以下</van-button
+            >
+            <van-button
+              :class="[pircerange == '1000-5000' ? '' : 'btn_bgc']"
+              :type="pircerange == '1000-5000' ? 'info' : 'default'"
+              size="small"
+              @click="pircerange = '1000-5000'"
+              >1000-5000</van-button
+            >
+            <van-button
+              :class="[pircerange == '5000-1000000' ? '' : 'btn_bgc']"
+              :type="pircerange == '5000-1000000' ? 'info' : 'default'"
+              size="small"
+              @click="pircerange = '5000-1000000'"
+              >5000以上</van-button
+            >
+          </div>
+        </div>
+        <div class="sex_box crowd_box">
+          <div class="title">针对人群</div>
+          <div class="btn_group">
+            <van-button
+              :class="[crowd == '' ? '' : 'btn_bgc']"
+              :type="crowd == '' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = ''"
+              >全年龄段</van-button
+            >
+            <van-button
+              :class="[crowd == '少年儿童（12岁及以下）' ? '' : 'btn_bgc']"
+              :type="crowd == '少年儿童（12岁及以下）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '少年儿童（12岁及以下）'"
+              >少年儿童（0-12岁）</van-button
+            >
+            <van-button
+              :class="[crowd == '青年（21-30岁）' ? '' : 'btn_bgc']"
+              :type="crowd == '青年（21-30岁）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '青年（21-30岁）'"
+              >青年（21-30岁）</van-button
+            >
+            <van-button
+              :class="[crowd == '中青年（21-40岁）' ? '' : 'btn_bgc']"
+              :type="crowd == '中青年（21-40岁）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '中青年（21-40岁）'"
+              >中青年（21-40岁）</van-button
+            >
+            <van-button
+              :class="[crowd == '中年（31-50岁）' ? '' : 'btn_bgc']"
+              :type="crowd == '中年（31-50岁）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '中年（31-50岁）'"
+              >中年（31-50岁）</van-button
+            >
+            <van-button
+              :class="[crowd == '中老年（41-50岁）' ? '' : 'btn_bgc']"
+              :type="crowd == '中老年（41-50岁）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '中老年（41-50岁）'"
+              >中老年（41-50岁）</van-button
+            >
+            <van-button
+              :class="[crowd == '老年（61岁以上）' ? '' : 'btn_bgc']"
+              :type="crowd == '老年（61岁以上）' ? 'info' : 'default'"
+              size="small"
+              @click="crowd = '老年（61岁以上）'"
+              >老年（61岁以上）</van-button
+            >
+          </div>
+        </div>
+        <div class="btn_box">
+          <van-button size="small" type="default" @click="handleResetCondition"
+            >重 置</van-button
+          >
+          <van-button size="small" type="info" @click="handleConfirmCondition"
+            >确 认</van-button
+          >
+        </div>
+      </div>
+    </van-action-sheet>
+  </div>
+</template>
+<script>
+import { getPublicConfig, getListData } from "@/api/reservation.js";
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      isLoading: false,
+      listLoading: false,
+      finished: false,
+      radio1: 0,
+      showSearchAll: false,
+      showPopoverSex: false,
+      showPopoverType: false,
+      sexCn: "全部",
+      sex: 0,
+      settype: "",
+      pircerange: "",
+      crowd: "",
+      settypeCn: "全部",
+      priceorderby: 1, // 价格排序(0,1)：0，降序，1，升序
+      sexItems: [
+        {
+          code: 0,
+          text: "全部",
+        },
+        {
+          code: 1,
+          text: "男",
+        },
+        {
+          code: 2,
+          text: "女",
+        },
+      ],
+      typeItems: [],
+      listData: [],
+      currentPage: 1,
+      pageSize: 20,
+      tempUrl: "https://img01.yzcdn.cn/vant/cat.jpeg",
+    };
+  },
+
+  mounted() {
+    getPublicConfig({ cc: "SetType" }).then((res) => {
+      if (!res.data.result) return;
+      this.typeItems = res.data.result.map((k) => {
+        return {
+          ...k,
+          text: k.name,
+        };
+      });
+      this.typeItems.unshift({
+        code: "",
+        text: "全部",
+      });
+    });
+    this.handleGetListData();
+  },
+
+  methods: {
+    // 点击查看套餐详情
+    handleCheckSetmealDetails(item) {
+      if (!item) return;
+      this.$router.push({
+        path: "/setmealDetails",
+        query: { setmealcode: item.setmealcode },
+      });
+    },
+    // 更多筛选条件触发
+    handleConfirmCondition() {
+      this.handleGetListData();
+      this.showSearchAll = false;
+    },
+    handleResetCondition() {
+      this.sex = 0;
+      this.pircerange = "";
+      this.crowd = "";
+    },
+    // 主页数据回调
+    handleGetListData() {
+      let whereitems = [
+        {
+          key: "sex",
+          value: this.sex,
+        },
+        {
+          key: "priceorderby",
+          value: this.priceorderby,
+        },
+      ];
+      let data = {
+        page: this.currentPage,
+        limit: this.pageSize,
+        businesstype: "SetmealList",
+        whereitems,
+      };
+      this.pircerange &&
+        whereitems.push({
+          key: "pircerange",
+          value: this.pircerange,
+        });
+      this.crowd &&
+        whereitems.push({
+          key: "crowd",
+          value: this.crowd,
+        });
+      getListData(data).then((res) => {
+        if (!res.data.result) {
+          this.listData = [];
+          this.isLoading = false;
+          this.listLoading = false;
+          this.currentPage = 1;
+          this.pageSize = 20;
+          this.finished = true;
+          this.handleResetCondition();
+          return;
+        }
+        this.listData = res.data.result;
+        this.isLoading = false;
+        this.listLoading = false;
+        if (this.pageSize >= res.data.count) {
+          this.finished = true;
+        }
+      });
+    },
+    handleChangePriceorderby() {
+      if (this.priceorderby == 1) {
+        this.priceorderby = 0;
+      } else {
+        this.priceorderby = 1;
+      }
+      this.handleGetListData();
+    },
+    // 下拉刷新回调列表
+    handleListRefresh() {
+      // 清空列表数据
+      this.currentPage = 1;
+      this.pageSize = 20;
+      // 重新加载数据
+      // 将 loading 设置为 true，表示处于加载状态
+      this.finished = false;
+      this.isLoading = true;
+      this.listLoading = true;
+      this.handleGetListData();
+    },
+    // 下拉列表刷新回调列表
+    handleLoadList() {
+      this.pageSize = this.pageSize + 20;
+      this.handleGetListData();
+    },
+    // 下拉改变性别回调
+    handleChangeSettype(item) {
+      this.settype = item.code;
+      this.settypeCn = item.text;
+      this.handleGetListData();
+    },
+    // 下拉改变性别回调
+    handleChangeSex(item) {
+      this.sex = item.code;
+      this.sexCn = item.text;
+      this.handleGetListData();
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+// @import url("./css/index.scss");
+.reservation {
+  height: calc(100vh - 101px);
+  background-color: #f2f2f2;
+  .search_box {
+    padding: 0 10px;
+    background-color: #fff;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    .search_item {
+      display: flex;
+      align-items: center;
+      .title {
+      }
+      .van-icon-exchange,
+      .van-icon-filter-o {
+        font-size: 18px;
+        color: #7c8586;
+      }
+      .click_btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 18px;
+        width: 50px;
+        margin-left: 8px;
+        background-color: #f2f2f2;
+        border-radius: 9px;
+        .van-icon {
+          margin-left: 4px;
+        }
+      }
+    }
+  }
+  .content_text {
+    font-size: 18px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+  }
+  .list_content {
+    height: calc(100vh - 183px);
+    background-color: #fff;
+    .van-pull-refresh {
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+
+      .van-list {
+        // height: 100%;
+        // width: 100%;
+        // overflow-y: auto;
+      }
+      .list_item {
+        height: 100px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e3e3e3;
+        margin: 0 10px;
+        .item_left {
+          display: flex;
+          font-size: 14px;
+          font-weight: 600;
+          max-width: 80%;
+          .van-image {
+            width: 80px;
+            height: 80px;
+            > img {
+              width: 100%;
+              height: 100%;
+            }
+          }
+          .item_text_box {
+            margin: 8px 0 0 10px;
+            .item_price {
+              color: red;
+              margin-top: 10px;
+            }
+          }
+        }
+        .item_right {
+          height: 73px;
+          .item_text_box {
+            margin: 8px 0 0 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+            color: #ababab;
+            .item_num {
+              color: red;
+              margin-top: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+  .content {
+    height: 80vh;
+    padding: 16px 16px;
+    .btn_box {
+      margin-top: 40px;
+      text-align: center;
+      .van-button {
+        width: 100px;
+        margin-left: 12px;
+      }
+    }
+    .crowd_box {
+      .btn_group {
+        .van-button {
+          margin-left: 8px;
+          margin-top: 10px;
+        }
+      }
+    }
+    .btn_bgc {
+      background-color: #f2f2f2;
+    }
+    .sex_box {
+      margin-top: 10px;
+      .title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+    }
+  }
+}
+</style>

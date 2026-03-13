@@ -1,0 +1,122 @@
+.index {
+    width: 100%;
+    height: 100vh;
+    overflow-y: hidden;
+    .header {
+        height: 80px;
+        color: #fff;
+        background-color: #27A7E0;
+    }
+    .subject {
+        height: calc(100vh - 94px);
+        position: relative;
+    }
+    .body {
+        padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        // margin-top: 20px;
+        .module_list {
+            margin-bottom: 15px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            // justify-content: space-evenly;
+            box-sizing: border-box;
+            // margin-top: 27px;
+            .report_query {
+                width: 33%;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            div {
+                width: 60px;
+                height: auto;
+                .link_icon {
+                    width: 40px;
+                    height: 40px;
+                }
+                .link_text {
+                    margin-top: 8px;
+                }
+                img {
+                    width: 60px;
+                    height: 60px;
+                }
+                div {
+                    text-align: center;
+                    font-size: 12.5px;
+                    font-family: PingFangSC-Regular, PingFang SC;
+                    font-weight: 400;
+                    color: #000000;
+                }
+            }
+        }
+    }
+    .employ {
+        // margin-top: 10%;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+        position: absolute;
+        bottom: 15%;
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000000;
+        }
+        .small_title {
+            color: #838b8c;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .employ_input {
+            width: 70%;
+            margin-top: 8px;
+            // border: 1px solid #ccc;
+            // /deep/.el-input__inner {
+            //     border-radius: 50%;
+            // }
+        }
+    }
+    .query {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        z-index: 999;
+        background: rgb(68, 65, 65);
+        top: 0;
+        opacity: 0.5;
+        .register {
+            width: 200px;
+            height: 100px;
+            background: #fff;
+            border-radius: 25px;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            position: absolute;
+            margin: auto;
+            text-align: center;
+            .titlecc {
+                margin-top: 10px;
+                // background: red;
+                font-size: 25px;
+            }
+            .determine {
+                width: 60px;
+                height: 20px;
+                background: #296fc3;
+                color: #fff;
+                margin: auto;
+                margin-top: 34px;
+                text-align: center;
+                line-height: 20px;
+            }
+        }
+    }
+}

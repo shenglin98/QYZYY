@@ -1,0 +1,333 @@
+<template>
+  <div class="customized">
+    <van-form class="pageform">
+      <!-- 姓名 -->
+      <div class="name_box">
+        <van-field
+          v-model="pageForm.name"
+          name="姓名"
+          label="姓名"
+          placeholder="（必填）请输入姓名"
+          :rules="[{ required: true, message: '请填写姓名' }]"
+        />
+      </div>
+      <!-- 证件类型 -->
+      <van-field
+        readonly
+        clickable
+        name="picker"
+        :value="pageForm.idcardcn"
+        label="证件类型"
+        placeholder="点击选择证件类型"
+        @click="showPelsidtype = true"
+      />
+      <!-- 身份证 -->
+      <van-field
+        v-model="pageForm.idcard"
+        name="身份证"
+        label="身份证"
+        placeholder="身份证"
+        :rules="[{ required: true, message: '请填写身份证' }]"
+        @blur="handleCheckIdcard"
+      />
+      <!-- 性别 -->
+      <van-field name="radio" label="性别">
+        <template #input>
+          <van-radio-group v-model="pageForm.sex" direction="horizontal">
+            <van-radio :name="1">男</van-radio>
+            <van-radio :name="2">女</van-radio>
+          </van-radio-group>
+        </template>
+      </van-field>
+      <!-- 生日 -->
+      <van-field
+        readonly
+        clickable
+        name="date"
+        :value="pageForm.birthday"
+        label="生日"
+        placeholder="请选择生日"
+        @click="showPicker = true"
+      />
+      <van-popup
+        v-model="showPicker"
+        position="bottom"
+        :style="{ height: '45%' }"
+      >
+        <van-datetime-picker
+          type="date"
+          item-height="120px"
+          @confirm="handleChangeonBirthday"
+          @cancel="showPicker = false"
+          v-model="relWkibedat"
+          :min-date="minDate"
+          :max-date="maxDate"
+        />
+      </van-popup>
+      <!-- 婚姻状况 -->
+      <van-field name="radio" label="婚姻状况">
+        <template #input>
+          <van-radio-group v-model="pageForm.marriage" direction="horizontal">
+            <van-radio name="未婚">未婚</van-radio>
+            <van-radio name="已婚">已婚</van-radio>
+          </van-radio-group>
+        </template>
+      </van-field>
+      <!-- 手机号 -->
+      <van-field
+        v-model="pageForm.telephone"
+        name="手机号"
+        label="手机号"
+        placeholder="手机号"
+      />
+      <!-- 身高 -->
+      <van-field
+        v-model="pageForm.height"
+        name="height"
+        label="身高"
+        placeholder="cm"
+      />
+      <!-- 体重 -->
+      <van-field
+        v-model="pageForm.weight"
+        name="width"
+        label="体重"
+        placeholder="kg"
+      />
+    </van-form>
+    <!-- 证件类型 -->
+    <van-popup
+      v-model="showPelsidtype"
+      :style="{ height: '48%' }"
+      position="bottom"
+    >
+      <van-picker
+        show-toolbar
+        item-height="120px"
+        :columns="idtypeItems"
+        @confirm="handleOnConfirmIdtype"
+        @cancel="showPelsidtype = false"
+      />
+    </van-popup>
+    <div class="btn_bom">
+      <van-button round size="normal" type="info" @click="handlesubmit"
+        >确 定</van-button
+      >
+    </div>
+    <template>
+      <form-vue
+        :show="formShow"
+        :person="pageForm"
+        @close="handleFormClose"
+      ></form-vue>
+    </template>
+  </div>
+</template>
+<script>
+import { getListData, GetQuestionnaireCombine } from "@/api/reservation.js";
+import formVue from "./form.vue";
+export default {
+  name: "index",
+
+  components: { formVue },
+
+  data() {
+    return {
+      formShow: false,
+      pageForm: {
+        id: "",
+        name: "",
+        sex: 0,
+        birthday: "",
+        marriage: "",
+        telephone: "",
+        idcard: "",
+        idtype: "01",
+        idcardcn: "身份证",
+        relation: "",
+        delflag: 0,
+        operatorcode: "",
+        hiscode: "",
+        healthcard: "",
+        height: "",
+        width: "",
+      },
+      showPicker: false,
+      showPelsidtype: false,
+      relWkibedat: new Date("2000/01/01"),
+      minDate: new Date(1900, 0, 1),
+      maxDate: new Date(
+        new Date(+new Date() + 8 * 3600 * 1000)
+          .toJSON()
+          .substr(0, 10)
+          .replace("T", " ")
+      ),
+      idtypeItems: [
+        "身份证",
+        "居民户口簿",
+        "护照",
+        "军官证",
+        "驾驶证",
+        "港澳居民来往内地通行证",
+        "台湾居民来往内地通行证",
+      ],
+      operatorcode: "",
+    };
+  },
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$router.push("/index");
+      return false;
+    }
+    this.getUserData();
+  },
+
+  methods: {
+    // form组件
+    handleFormClose() {
+      this.formShow = false;
+      console.log("关闭");
+    },
+    // 提交
+    handlesubmit() {
+      GetQuestionnaireCombine(this.pageForm).then((res) => {
+        if (res.status == 200) {
+          console.log(res, "请求回来了");
+          if (res.data.result.dirList.length > 0) {
+            sessionStorage.setItem(
+              "StepFormData",
+              JSON.stringify(res.data.result)
+            );
+            this.formShow = true;
+          }
+        }
+      });
+      // console.log(this.pageForm, this.formShow);
+    },
+    getUserData() {
+      getListData({
+        businesstype: "OutUserInfo",
+        code: this.operatorcode,
+        whereitems: [],
+      }).then((res) => {
+        const ARR = res.data.result;
+        switch (ARR.idtype) {
+          case "01":
+            ARR.idcardcn = "身份证";
+            break;
+          case "02":
+            ARR.idcardcn = "居民户口簿";
+            break;
+          case "03":
+            ARR.idcardcn = "护照";
+            break;
+          case "04":
+            ARR.idcardcn = "军官证";
+            break;
+          case "05":
+            ARR.idcardcn = "驾驶证";
+            break;
+          case "06":
+            ARR.idcardcn = "港澳居民来往内地通行证";
+            break;
+          case "07":
+            ARR.idcardcn = "台湾居民来往内地通行证";
+            break;
+          default:
+            break;
+        }
+        this.pageForm = ARR;
+      });
+    },
+    // 选择生日回调
+    handleChangeonBirthday(time) {
+      this.pageForm.birthday = this.formatDate(+time);
+      this.showPicker = false;
+    }, // 选中证件类型回调
+    handleOnConfirmIdtype(value) {
+      // this.pageForm.idtype = value;
+      if (!value) return;
+      switch (value) {
+        case "身份证":
+          this.pageForm.idtype = "01";
+          this.pageForm.idcardcn = "身份证";
+          break;
+        case "居民户口簿":
+          this.pageForm.idtype = "02";
+          this.pageForm.idcardcn = "居民户口簿";
+          break;
+        case "护照":
+          this.pageForm.idtype = "03";
+          this.pageForm.idcardcn = "护照";
+          break;
+        case "军官证":
+          this.pageForm.idtype = "04";
+          this.pageForm.idcardcn = "军官证";
+          break;
+        case "驾驶证":
+          this.pageForm.idtype = "05";
+          this.pageForm.idcardcn = "驾驶证";
+          break;
+        case "港澳居民来往内地通行证":
+          this.pageForm.idtype = "06";
+          this.pageForm.idcardcn = "港澳居民来往内地通行证";
+          break;
+        case "台湾居民来往内地通行证":
+          this.pageForm.idtype = "07";
+          this.pageForm.idcardcn = "台湾居民来往内地通行证";
+          break;
+        default:
+          break;
+      }
+      this.showPelsidtype = false;
+    },
+    // 失焦校验身份证
+    handleCheckIdcard() {
+      let idCardReg =
+        /^(^[1-9]\d{7}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}$)|(^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])((\d{4})|\d{3}[Xx])$)$/;
+      console.log("进来了吗");
+      if (idCardReg.test(this.pageForm.idcard) === false) {
+        this.$toast.fail("身份证格式不合法!");
+        this.pageForm.idcard = "";
+        return;
+      }
+      // 获取性别
+      if (+this.pageForm.idcard.slice(16, 17) % 2 == 0) {
+        this.pageForm.sex = 2;
+      } else {
+        this.pageForm.sex = 1;
+      }
+      // 获取出生年月日
+      this.pageForm.birthday =
+        this.pageForm.idcard.substring(6, 10) +
+        "-" +
+        this.pageForm.idcard.substring(10, 12) +
+        "-" +
+        this.pageForm.idcard.substring(12, 14);
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.customized {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 8px;
+  position: relative;
+  .btn_bom {
+    width: 100%;
+    text-align: center;
+    margin-top: 50px;
+    .van-button {
+      width: 70%;
+    }
+  }
+}
+</style>

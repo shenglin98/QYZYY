@@ -1,0 +1,445 @@
+<template>
+  <div class="viewReport">
+    <!-- <iframe
+      ref="pdfCotainer"
+      :src="pdfUrl"
+      width="100%"
+      class="pdfCotainer"
+    ></iframe> -->
+    <div class="mask" v-if="isWeiXin && isAndroidPhone">
+      <div class="tips">1、点击右上角图标 ···</div>
+      <div class="tips">2、选择 "在浏览器中" 打开</div>
+    </div>
+    <div class="big" v-else>
+      <div class="btn_box">
+        <el-button
+          type="success"
+          size="mini"
+          plain
+          v-if="$route.name == 'viewReport'"
+          @click="handleDownloadNamePdf"
+          >下载PDF</el-button
+        >
+      </div>
+      <div id="demo" ref="demo"></div>
+    </div>
+    <div class="loading" v-if="loading">
+      <el-table
+        class="loadingone"
+        v-loading="loading"
+        element-loading-text="拼命加载报告中"
+        element-loading-spinner="el-icon-loading"
+        element-loading-background="rgba(0, 0, 0, 0.8)"
+        style="width: 100%"
+      >
+      </el-table>
+    </div>
+  </div>
+</template>
+  
+  <script>
+import api from "@/api/index";
+import Pdfh5 from "pdfh5";
+
+export default {
+  data() {
+    return {
+      pdfUrl: "",
+      numPages: null, // pdf 总页数
+      loading: true,
+      pdfh5: null,
+      isWeiXin: true,
+      isAndroidPhone: false,
+      isiOSPhone: false,
+      downloadName: "",
+      currentPerson: null,
+      url: "",
+      customercode: "",
+    };
+  },
+
+  created() {},
+  async mounted() {
+    let regid = this.$route.query && this.$route.query.regid;
+    this.customercode = this.$route.query && this.$route.query.customercode;
+    if (this.customercode) {
+      let res = await api.home.getPersonalDetail({
+        regid,
+        customercode: this.customercode || localStorage.getItem("customercode"),
+      });
+      this.getIsWxClient();
+      this.isAndroidPhone = this.isAndroid();
+      this.isiOSPhone = this.isiOS();
+      if (!res.data.result) return;
+      this.currentPerson = res.data.result;
+      this.handleViewReportGyey(); // 广医二院
+    }
+  },
+  methods: {
+    gopfg() {
+      let temApp = this.$refs.demo;
+      html2canvas(temApp).then((canvas) => {
+        // 生成 PDF
+        const doc = new jsPDF("p", "pt", [canvas.width, canvas.height]);
+        console.log(doc);
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        doc.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
+        doc.save("example.pdf");
+      });
+    },
+    getIsWxClient() {
+      const ua = navigator.userAgent.toLowerCase();
+
+      if (ua.match(/MicroMessenger/i) == "micromessenger") {
+        this.isWeiXin = true;
+      } else {
+        this.isWeiXin = false;
+      }
+    },
+    // 判断当前设备是否为Android手机
+    isAndroid() {
+      return /Android/i.test(navigator.userAgent);
+    },
+
+    // 判断当前设备是否为iOS（苹果）手机
+    isiOS() {
+      return /(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent);
+    },
+    async handleDownloadNamePdf() {
+      const a = document.createElement("a");
+      a.href = this.url;
+      a.download = this.downloadName; // 下载文件的名字
+      document.body.appendChild(a);
+      a.click();
+      // this.pdfh5.download(this.downloadName);
+    },
+    // // 查看报告的点击事件
+    async handleViewReportGyey() {
+      let CurrentPerson = this.currentPerson;
+      // let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+      console.log(CurrentPerson);
+      if (!CurrentPerson) return;
+      let repname = "1、F报告书";
+      const { data } = await api.home.View_report({
+        fingercode: "",
+        codes: [CurrentPerson.regid],
+        repname,
+        customercode: this.customercode || localStorage.getItem("customercode"),
+        // filetype: "pdf",
+        // outtype: "url",
+        whereitems: [],
+      });
+
+      this.loading = false;
+      let downloadName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+      this.downloadName = `${CurrentPerson.regid}-${CurrentPerson.name}`;
+      // let url = data.data[0].fileurl;
+      let code = data.data[0].base64String.replace(/[\n\r]/g, "");
+      let raw = window.atob(code);
+      let rawLength = raw.length; //转换成pdf.js能直接解析的Uint8Array类型
+      let uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      let url = window.URL.createObjectURL(
+        new Blob([uInt8Array], { type: "application/pdf" })
+      );
+      this.url = url;
+      // let result = await api.home.getFiles({
+      //   ic: "48b1ab26-1314-4c1f-b357-5d8c263a902f",
+      // });
+      // let result = await api.home.getFiles({ic:data.data[0].fileid});
+      // console.log(result);
+      //实例化
+      this.pdfh5 = new Pdfh5("#demo", {
+        data: uInt8Array,
+        pdfurl: url,
+      });
+      // this.pdfh5 = new Pdfh5("#demo", {
+      //   data: uInt8Array,
+      // });
+      //   this.pdfh5.download(downloadName, () => {});
+      //监听完成事件
+      this.pdfh5.on("complete", function (status, msg, time) {
+        console.log(
+          "状态：" +
+            status +
+            "，信息：" +
+            msg +
+            "，耗时：" +
+            time +
+            "毫秒，总页数：" +
+            this.totalNum
+        );
+      });
+      localStorage.setItem(
+        "dlMessage",
+        JSON.stringify({
+          regid: CurrentPerson.regid,
+          name: CurrentPerson.name,
+          repname: "1、报告书",
+        })
+      );
+      localStorage.setItem("fileurl", data.data[0].fileurl);
+      //   this.pdfUrl = data.data[0].fileurl;
+      //   const url = data.data[0].fileurl;
+      //   const link = document.createElement("a");
+      //   link.href = url;
+      //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+    },
+    // // 查看体格检查表的点击事件
+    async handleViewGuideSingGyey() {
+      // let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+      let CurrentPerson = this.currentPerson;
+      if (!CurrentPerson) return;
+      let repname = "1、体格检查表";
+      if (CurrentPerson.meccode == "0" || CurrentPerson.checktype == "2") {
+        repname = "1、体格检查表H5";
+      }
+      const { data } = await api.home.View_report({
+        fingercode: "",
+        codes: [CurrentPerson.regid],
+        repname,
+        // filetype: "pdf",
+        // outtype: "url",
+        whereitems: [
+          {
+            key: "regid",
+            value: CurrentPerson.regid,
+          },
+        ],
+      });
+
+      this.loading = false;
+      let downloadName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+      this.downloadName = `${CurrentPerson.regid}-${CurrentPerson.name}`;
+      let code = data.data[0].base64String.replace(/[\n\r]/g, "");
+      let raw = window.atob(code);
+      let rawLength = raw.length; //转换成pdf.js能直接解析的Uint8Array类型
+      let uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      //实例化
+      this.pdfh5 = new Pdfh5("#demo", {
+        data: uInt8Array,
+        pdfurl: url,
+      });
+      //   this.pdfh5.download(downloadName, () => {});
+      //监听完成事件
+      this.pdfh5.on("complete", function (status, msg, time) {
+        console.log(
+          "状态：" +
+            status +
+            "，信息：" +
+            msg +
+            "，耗时：" +
+            time +
+            "毫秒，总页数：" +
+            this.totalNum
+        );
+      });
+      localStorage.setItem("fileurl", data.data[0].fileurl);
+      //   this.pdfUrl = data.data[0].fileurl;
+      //   const url = data.data[0].fileurl;
+      //   const link = document.createElement("a");
+      //   link.href = url;
+      //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+    },
+    async handleViewGuideSingYzzyy() {
+      let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+      if (!CurrentPerson) return;
+      let repname = "1、体格检查表";
+      if (CurrentPerson.meccode == "0" || CurrentPerson.checktype == "2") {
+        repname = "1、体格检查表H5";
+      }
+      const { data } = await api.home.View_report({
+        fingercode: "",
+        codes: [CurrentPerson.regid],
+        repname: "1、梅州检查表",
+        // repname,
+        // filetype: "pdf",
+        // outtype: "url",
+        whereitems: [
+          {
+            key: "regid",
+            value: CurrentPerson.regid,
+          },
+        ],
+      });
+
+      this.loading = false;
+      let downloadName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+      let code = data.data[0].base64String.replace(/[\n\r]/g, "");
+      let raw = window.atob(code);
+      let rawLength = raw.length; //转换成pdf.js能直接解析的Uint8Array类型
+      let uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      //实例化
+      this.pdfh5 = new Pdfh5("#demo", {
+        data: uInt8Array,
+      });
+      //   this.pdfh5.download(downloadName, () => {});
+      //监听完成事件
+      this.pdfh5.on("complete", function (status, msg, time) {
+        console.log(
+          "状态：" +
+            status +
+            "，信息：" +
+            msg +
+            "，耗时：" +
+            time +
+            "毫秒，总页数：" +
+            this.totalNum
+        );
+      });
+      localStorage.setItem("fileurl", data.data[0].fileurl);
+      //   this.pdfUrl = data.data[0].fileurl;
+      //   const url = data.data[0].fileurl;
+      //   const link = document.createElement("a");
+      //   link.href = url;
+      //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+    },
+    async handleViewReportYzzyy() {
+      let CurrentPerson = JSON.parse(localStorage.getItem("currentData")) || "";
+      if (!CurrentPerson) return;
+      let repname = "";
+      if (CurrentPerson.checktype == 1) {
+        repname = `1、F报告书`;
+      } else if (CurrentPerson.checktype == 2) {
+        repname = `1、F报告书`;
+      } else if (CurrentPerson.checktype == 3) {
+        repname = `1、民兵体格检查表`;
+      } else if (CurrentPerson.checktype == 4) {
+        repname = `1、教师体格检查表`;
+      } else if (CurrentPerson.checktype == 5) {
+        repname = `1、F团体报告书`;
+      } else if (CurrentPerson.checktype == 6) {
+        repname = `1、体格检查表`;
+      } else if (CurrentPerson.checktype == 7) {
+        repname = `1、乡村健康体检表`;
+      } else if (CurrentPerson.checktype == 8) {
+        repname = `1、入学体检表`;
+      } else {
+        repname = `1、F报告书`;
+      }
+      const { data } = await api.home.View_report({
+        fingercode: "",
+        codes: [CurrentPerson.regid],
+        repname: "1、梅州报告书",
+        // repname,
+        designtype:
+          repname.split("、")[1].substr(0, 1) === "F" ? "fast" : "dev",
+        // filetype: "pdf",
+        // outtype: "url",
+        whereitems: [],
+      });
+
+      this.loading = false;
+      let downloadName = `${this.GLOBAL.codes}-${this.GLOBAL.names}`;
+      let code = data.data[0].base64String.replace(/[\n\r]/g, "");
+      let raw = window.atob(code);
+      let rawLength = raw.length; //转换成pdf.js能直接解析的Uint8Array类型
+      let uInt8Array = new Uint8Array(rawLength);
+      for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+      }
+      //实例化
+      this.pdfh5 = new Pdfh5("#demo", {
+        data: uInt8Array,
+      });
+      //   this.pdfh5.download(downloadName, () => {});
+      //监听完成事件
+      this.pdfh5.on("complete", function (status, msg, time) {
+        console.log(
+          "状态：" +
+            status +
+            "，信息：" +
+            msg +
+            "，耗时：" +
+            time +
+            "毫秒，总页数：" +
+            this.totalNum
+        );
+      });
+      localStorage.setItem("fileurl", data.data[0].fileurl);
+      //   this.pdfUrl = data.data[0].fileurl;
+      //   const url = data.data[0].fileurl;
+      //   const link = document.createElement("a");
+      //   link.href = url;
+      //   link.download = `${this.GLOBAL.codes}-${this.GLOBAL.names}`; //下载文件regid以及文件名字
+      //   document.body.appendChild(link);
+      //   link.click();
+      //   document.body.removeChild(link);
+    },
+  },
+};
+</script>
+  <style lang="scss" scoped>
+.viewReport {
+  width: 100%;
+  height: calc(100% - 95px);
+  box-sizing: border-box;
+  padding-bottom: 50px;
+  .big {
+    height: 100%;
+    .btn_box {
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+  .pdfCotainer {
+    width: 100%;
+    height: 100%;
+  }
+  //   #demo {
+  //     width: 100%;
+  //     height: 100%;
+  //   }
+}
+.loading {
+  width: 100%;
+  height: 100%;
+  /* background: red; */
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+}
+
+.loadingone {
+  height: 100%;
+}
+.mask {
+  width: 100%;
+  height: 100vh;
+  background-color: #666666;
+  padding-top: 30%;
+  z-index: 999;
+}
+.mask .tips {
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.button {
+  width: 90%;
+  padding: 5%;
+}
+</style>
+  

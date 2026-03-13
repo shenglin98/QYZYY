@@ -1,0 +1,274 @@
+<template>
+  <div class="index">
+    <!-- <Header class="header" :titleObj="showTitle" /> -->
+    <!-- <div class="head">
+      <div @click="back()">
+        <i v-if="$route.path != '/index'" class="el-icon-back"></i>
+      </div>
+      <div>{{ showTitle || this.GLOBAL.colorList }}</div>
+      <div class="ddd">
+        <div
+          class="fan"
+          v-if="$route.name == 'orderMessage'"
+          @click="View_report"
+        >
+          查看报告
+        </div>
+         <div
+          class="fan"
+          v-if="$route.name == 'viewReport'"
+          @click="handledownloadReport"
+        >
+          下载PDF
+        </div> 
+         <div class="fan" v-if="this.GLOBAL.colorList == '体检结果'">
+          查看报告
+        </div> 
+      </div>
+
+      <div class="loading" v-if="loading">
+        <el-table
+          class="loadingone"
+          v-loading="loading"
+          element-loading-text="拼命加载报告中"
+          element-loading-spinner="el-icon-loading"
+          element-loading-background="rgba(0, 0, 0, 0.8)"
+          style="width: 100%"
+        >
+        </el-table>
+      </div>
+    </div> -->
+    <van-nav-bar
+      :title="showTitle || this.GLOBAL.colorList"
+      :fixed="true"
+      :placeholder="true"
+      @click-left="back"
+      @click-right="View_report"
+    >
+      <template #left>
+        <!-- <div class="back_btn" v-if="$route.path != '/index'"> -->
+        <div
+          class="back_btn"
+          v-if="
+            !['/index', '/orderListPage', '/personalCenter'].includes(
+              $route.path
+            )
+          "
+        >
+          <van-icon name="arrow-left" />
+          <span class="title">返回</span>
+        </div>
+      </template>
+      <template #right>
+        <div
+          class="fan"
+          v-if="$route.name == 'orderMessage'"
+          @click="View_report"
+        >
+          查看报告
+        </div>
+      </template>
+    </van-nav-bar>
+    <div class="subject" v-if="$route.path == '/index'">
+      <div class="body">
+        <div class="module_list">
+          <div class="report_query" @click="jumpReservation('GRYY')">
+            <!-- <img src="/static/image/编组.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl1" />
+            <div class="link_text">体检套餐</div>
+          </div>
+
+          <div class="report_query" @click="jumpReservation('GRYY')">
+            <!-- <img src="/static/image/personal_medical.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl2" />
+            <div class="link_text" style="width: 3rem">个人预约</div>
+          </div>
+          <div class="report_query" @click="jumpReportQuery('BGCX')">
+            <!-- <img src="/static/image/personal_medical.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl3" />
+            <div class="link_text">报告查询</div>
+          </div>
+
+          <!-- <template>
+            <el-button type="text" @click="jumpReportQuery">
+              <div class="report_query">
+                <img src="/static/image/report_query.png" alt=""> 
+                <van-image class="link_icon" :src="iconUrl3" />
+                <div>报告查询</div>
+              </div>
+            </el-button>
+          </template> -->
+        </div>
+
+        <div class="module_list">
+          <div class="report_query" @click="jumpGroupsCheck('TJYY')">
+            <!-- <img src="/static/image/group_medical.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl4" />
+            <div class="link_text">团检预约</div>
+          </div>
+          <div class="report_query" @click="jumpGroupsGuidance('TJDZ')">
+            <!-- <img src="/static/image/group_medical.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl4" />
+            <div class="link_text">体检导诊</div>
+          </div>
+          <!-- <div class="report_query" @click="jumpGroupsRecommend">
+            <van-image class="link_icon" :src="iconUrl4" />
+            <div class="link_text">体检推荐</div>
+          </div> -->
+          <div class="report_query" @click="jumpConsult">
+            <van-image class="link_icon" :src="iconUrl5" />
+            <div class="link_text">在线咨询</div>
+          </div>
+        </div>
+        <div class="module_list">
+          <div class="report_query" @click="jumpSynopsis('YYJJ')">
+            <!-- <img src="/static/image/contact_us.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl5" />
+            <div class="link_text">医院简介</div>
+          </div>
+          <div class="report_query">
+            <!-- <img src="/static/image/contact_us.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl5" />
+            <div class="link_text">联系我们</div>
+          </div>
+          <div class="report_query" @click="jumpCustomized">
+            <!-- <img src="/static/image/contact_us.png" alt=""> -->
+            <van-image class="link_icon" :src="iconUrl4" />
+            <div class="link_text">体检定制</div>
+          </div>
+        </div>
+      </div>
+      <!-- <div class="employ">
+        <div class="title">智能服务</div>
+        <div class="small_title">请输入体检号，系统自动识别</div>
+        <el-input
+          class="employ_input"
+          placeholder="请输入体检号或手机号或身份证"
+          v-model="searchName"
+          clearable
+          @keyup.enter.native="handleJumpReportQuery"
+        >
+        </el-input>
+        <van-button
+          class="employ_btn"
+          round
+          type="info"
+          size="large"
+          @click="handleJumpReportQuery"
+          >进 入</van-button
+        >
+      </div> -->
+      <!-- 报告查询 -->
+      <div class="query" v-show="query">
+        <div class="register">
+          <!-- 请先挂号 -->
+
+          <p class="titlecc">请先挂号</p>
+          <p class="determine" @click="determine">确定</p>
+        </div>
+      </div>
+    </div>
+    <router-view v-else></router-view>
+    <van-tabbar route fixed>
+      <van-tabbar-item replace to="/" icon="wap-home-o">首页</van-tabbar-item>
+      <van-tabbar-item replace to="/orderListPage" icon="notes-o"
+        >我的体检</van-tabbar-item
+      >
+      <van-tabbar-item replace to="/personalCenter" icon="contact"
+        >个人中心</van-tabbar-item
+      >
+    </van-tabbar>
+    <el-dialog
+      title=""
+      class="printDia"
+      :visible.sync="dialogVisible"
+      width="70%"
+      :show-close="false"
+      @close="handleClosePrintDia"
+    >
+      <span>
+        <!-- <el-button type="primary" @click="handleViewGuideSing"
+          >体格检查表</el-button
+        > -->
+        <el-button type="primary" class="printRebort" @click="handleViewReport"
+          >个人报告书</el-button
+        >
+      </span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="handleClosePrintDia" size="mini" plain type="primary"
+          >取 消</el-button
+        >
+      </span>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import Header from "@/components/header/index.vue";
+export default {
+  name: "",
+
+  components: {
+    Header,
+  },
+
+  data() {
+    return {};
+  },
+
+  mounted() {},
+
+  methods: {},
+
+  watch: {
+    $route(to, from) {
+      console.log(to.meta.title);
+      this.showTitle = to.meta.title;
+      if (this.$route.path == "/index") {
+        this.show = false;
+      } else {
+        this.show = true;
+      }
+    },
+  },
+
+  computed: {},
+};
+</script>
+<script src="./index.vue.js" lang="js"></script>
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style src="./index.vue.scss" lang="scss" scoped></style>
+<style lang="scss">
+.van-nav-bar.van-hairline--bottom::after {
+  border-bottom-width: 0 !important;
+}
+.van-nav-bar {
+  background: #27a7e0;
+  .van-nav-bar__title {
+    color: white;
+  }
+  .van-nav-bar__left {
+    .van-icon {
+      color: #fff !important;
+    }
+    .back_btn {
+      color: #fff !important;
+    }
+  }
+}
+.employ {
+  .employ_input {
+    width: 70%;
+    margin-top: 8px;
+    border-radius: 20px;
+
+    .el-input__inner {
+      // border: 1px solid #ccc;
+      border-radius: 20px;
+    }
+  }
+  .employ_btn {
+    width: 70%;
+    margin-top: 8px;
+  }
+}
+</style>

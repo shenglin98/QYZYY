@@ -1,0 +1,55 @@
+import api from '../../api/index'
+export default {
+  components: {
+    
+  },
+  data () {
+    return {
+        input:'',
+        usermsg:[]
+    }
+  },
+  created () {
+    
+  },
+  mounted() {
+    
+  },
+  methods: {
+    // 跳转到预约
+    jumpSubscribe(){
+      if(this.input){
+        this.getUser()
+      }else{
+        this.$toast.fail('请输入值！');
+      }
+    },
+    // 体检号、身份证、手机号、体检号获取历史信息
+    async getUser(){
+      const {data} = await api.home.GetCustomerRegisterList({
+        keyword:this.input
+      })
+      console.log(data);
+      if(data.result.length > 0){
+        this.usermsg = data.result
+        // 跳转路由
+        this.$router.push(`/subscribe?regid=${data.result[0].regid}`)
+      }else{
+        this.$toast.fail('未查询到订单');
+      }
+    }
+  },
+  beforeDestroy(){
+    
+  },
+  watch: {
+    $route: {
+      handler: function(val, oldVal){
+        console.log(val.path);
+        this.getMyToken()
+      },
+      // 深度观察监听
+      deep: true
+    },
+  },
+}

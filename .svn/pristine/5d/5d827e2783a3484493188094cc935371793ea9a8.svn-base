@@ -1,0 +1,316 @@
+import Vue from 'vue'
+import Router from 'vue-router'
+// import details from '@/views/details/details.vue';
+
+// 首页
+const Index = r => require.ensure([], () => r(require('@/views/index/index.vue')), 'index')
+    // 检查预约
+const PersonalMedical = r => require.ensure([], () => r(require('@/views/personalMedical/index.vue')), 'personalMedical')
+    // 预约界面
+const Subscribe = r => require.ensure([], () => r(require('@/views/subscribe/index.vue')), 'subscribe')
+    // 报告查询
+const ReportQuery = r => require.ensure([], () => r(require('@/views/reportQuery/index.vue')), 'reportQuery')
+    // 我的订单
+const OrderList = r => require.ensure([], () => r(require('@/views/orderList/index.vue')), 'orderList')
+    // 订单详情
+const OrderMessage = r => require.ensure([], () => r(require('@/views/orderMessage/index.vue')), 'orderMessage')
+    // 团检
+const GroupsCheck = r => require.ensure([], () => r(require('@/views/groupsCheck/index.vue')), 'groupsCheck')
+
+const ViewReport = r => require.ensure([], () => r(require('@/views/viewReport/index.vue')), 'viewReport')
+
+// 详情页面
+const Details = r => require.ensure([], () => r(require('@/views/details/details.vue')), 'details');
+//输入
+const Report = r => require.ensure([], () => r(require('@/views/report/report.vue')), 'report')
+    // 个人预约
+const Reservation = r => require.ensure([], () => r(require('@/views/reservation/index.vue')), 'reservation')
+    // 套餐详情
+const SetmealDetails = r => require.ensure([], () => r(require('@/views/setmealDetails/index.vue')), 'setmealDetails')
+    // 选择项目
+const FreeProject = r => require.ensure([], () => r(require('@/views/freeProject/index.vue')), 'freeProject')
+    // 项目确认
+const ProjectConfirm = r => require.ensure([], () => r(require('@/views/projectConfirm/index.vue')), 'projectConfirm')
+    // 预约信息
+const ReservaInfo = r => require.ensure([], () => r(require('@/views/reservaInfo/index.vue')), 'reservaInfo')
+    // 订单确认
+const OrderConfirm = r => require.ensure([], () => r(require('@/views/orderConfirm/index.vue')), 'orderConfirm')
+    // 我的体检-我的订单
+const OrderListPage = r => require.ensure([], () => r(require('@/views/orderListPage/index.vue')), 'orderListPage')
+    // 个人中心
+const PersonalCenter = r => require.ensure([], () => r(require('@/views/personalCenter/index.vue')), 'personalCenter')
+const PersonalCenterEdit = r => require.ensure([], () => r(require('@/views/personalCenterEdit/index.vue')), 'personalCenterEdit')
+const PersonalCenterSet = r => require.ensure([], () => r(require('@/views/personalCenterEdit/setdata.vue')), 'personalCenterSet')
+    // 团检预约
+const UnitReserva = r => require.ensure([], () => r(require('@/views/unitReserva/index.vue')), 'unitReserva')
+    // 团检注册
+const Unitregister = r => require.ensure([], () => r(require('@/views/unitregister/index.vue')), 'unitregister')
+    // 团检信息
+const UnitInfo = r => require.ensure([], () => r(require('@/views/unitInfo/index.vue')), 'unitInfo')
+    // 医院简介 
+const Synopsis = r => require.ensure([], () => r(require('@/views/synopsis/index.vue')), 'synopsis')
+    // 分组选择 
+const SelectGroup = r => require.ensure([], () => r(require('@/views/selectGroup/index.vue')), 'selectGroup')
+    // 体检分组 
+const CheckGroup = r => require.ensure([], () => r(require('@/views/checkGroup/index.vue')), 'checkGroup')
+    // 体检分组 
+const UnitConfirm = r => require.ensure([], () => r(require('@/views/unitConfirm/index.vue')), 'unitConfirm')
+    // 选择人员 
+const SelectUser = r => require.ensure([], () => r(require('@/views/selectUser/index.vue')), 'selectUser')
+    // 登录页 
+const Login = r => require.ensure([], () => r(require('@/views/login/index.vue')), 'login')
+    // 登录页 
+const Guidance = r => require.ensure([], () => r(require('@/views/guidance/index.vue')), 'guidance')
+    // 体检订制 
+const Customized = r => require.ensure([], () => r(require('@/views/customized/index.vue')), 'customized')
+    // 方案推荐 
+const Scheme = r => require.ensure([], () => r(require('@/views/scheme/index.vue')), 'scheme')
+    // 在线咨询 
+const Consult = r => require.ensure([], () => r(require('@/views/consult/index.vue')), 'consult')
+    // 活动预约页 
+const Selfselection = r => require.ensure([], () => r(require('@/views/selfselection/index.vue')), 'selfselection')
+Vue.use(Router)
+    //获取原型对象上的push函数
+const originalPush = Router.prototype.push
+    //修改原型对象中的push方法
+Router.prototype.push = function push(location) {
+    return originalPush.call(this, location).catch(err => err)
+}
+
+export default new Router({
+    routes: [{
+            path: '/',
+            redirect: '/index'
+        },
+        {
+            path: '/index',
+            name: 'index',
+            component: Index,
+            meta: {
+                title: "广东药科大学附属第一医院"
+            },
+            children: [{
+                path: '/report',
+                name: 'report',
+                component: Report,
+            }, {
+                path: '/reportQuery',
+                name: 'reportQuery',
+                component: ReportQuery,
+            }, {
+                path: '/orderMessage', //---
+                name: 'orderMessage',
+                component: OrderMessage,
+            }, {
+                path: '/viewReport',
+                name: 'viewReport',
+                component: ViewReport,
+            }, {
+                path: '/reservation',
+                name: 'reservation',
+                component: Reservation,
+                meta: {
+                    title: "个人体检预约"
+                },
+            }, {
+                path: '/setmealDetails',
+                name: 'setmealDetails',
+                component: SetmealDetails,
+                meta: {
+                    title: "套餐详情"
+                },
+            }, {
+                path: '/freeProject',
+                name: 'freeProject',
+                component: FreeProject,
+                meta: {
+                    title: "项目选择"
+                },
+            }, {
+                path: '/projectConfirm',
+                name: 'projectConfirm',
+                component: ProjectConfirm,
+                meta: {
+                    title: "项目确认"
+                },
+            }, {
+                path: '/reservaInfo',
+                name: 'reservaInfo',
+                component: ReservaInfo,
+                meta: {
+                    title: "预约信息"
+                },
+            }, {
+                path: '/orderConfirm',
+                name: 'orderConfirm',
+                component: OrderConfirm,
+                meta: {
+                    title: "订单确认"
+                },
+            }, {
+                path: '/selfselection',
+                name: 'selfselection',
+                component: Selfselection,
+                meta: {
+                    title: "自选套餐"
+                },
+            }, {
+                path: '/orderListPage',
+                name: 'orderListPage',
+                component: OrderListPage,
+                meta: {
+                    title: "我的订单"
+                },
+            }, {
+                path: '/personalCenter',
+                name: 'personalCenter',
+                component: PersonalCenter,
+                meta: {
+                    title: "个人中心"
+                },
+            }, {
+                path: '/personalCenterEdit',
+                name: 'personalCenterEdit',
+                component: PersonalCenterEdit,
+                meta: {
+                    title: "查看个人信息"
+                },
+            }, {
+                path: '/personalCenterSet',
+                name: 'personalCenterSet',
+                component: PersonalCenterSet,
+                meta: {
+                    title: "修改个人信息"
+                },
+            }, {
+                path: '/unitReserva',
+                name: 'unitReserva',
+                component: UnitReserva,
+                meta: {
+                    title: "单位预约"
+                },
+            }, {
+                path: '/unitInfo',
+                name: 'unitInfo',
+                component: UnitInfo,
+                meta: {
+                    title: "体检服务"
+                },
+            }, {
+                path: '/synopsis',
+                name: 'synopsis',
+                component: Synopsis,
+                meta: {
+                    title: "医院简介"
+                },
+            }, {
+                path: '/selectGroup',
+                name: 'selectGroup',
+                component: SelectGroup,
+                meta: {
+                    title: "分组选择"
+                },
+            }, {
+                path: '/unitregister',
+                name: 'unitregister',
+                component: Unitregister,
+                meta: {
+                    title: "团检注册"
+                },
+            }, {
+                path: '/checkGroup',
+                name: 'checkGroup',
+                component: CheckGroup,
+                meta: {
+                    title: "体检分组"
+                },
+            }, {
+                path: '/unitConfirm',
+                name: 'unitConfirm',
+                component: UnitConfirm,
+                meta: {
+                    title: "体检服务"
+                },
+            }, {
+                path: '/selectUser',
+                name: 'selectUser',
+                component: SelectUser,
+                meta: {
+                    title: "选择人员"
+                },
+            }, {
+                path: '/guidance',
+                name: 'guidance',
+                component: Guidance,
+                meta: {
+                    title: "体检导诊"
+                },
+            }, {
+                path: '/customized',
+                name: 'customized',
+                component: Customized,
+                meta: {
+                    title: "体检定制"
+                },
+            }, {
+                path: '/scheme',
+                name: 'scheme',
+                component: Scheme,
+                meta: {
+                    title: "方案推荐"
+                },
+            }, {
+                path: '/consult',
+                name: 'consult',
+                component: Consult,
+                meta: {
+                    title: "在线咨询"
+                },
+            }]
+        },
+        {
+            path: '/login',
+            name: 'login',
+            component: Login,
+        },
+        {
+            path: '/personalMedical',
+            name: 'personalMedical',
+            component: PersonalMedical,
+        },
+        {
+            path: '/subscribe',
+            name: 'subscribe',
+            component: Subscribe,
+        },
+        {
+            path: '/orderList',
+            name: 'orderList',
+            component: OrderList,
+        },
+
+        {
+            path: '/groupsCheck',
+            name: 'groupsCheck',
+            component: GroupsCheck,
+        },
+        {
+            path: '/details',
+            name: 'details',
+            component: Details,
+        },
+
+        // 报告详情页面
+        // {
+        //   path:'/details',
+        //   component: () => import('@/views/details/details.vue'),
+        // }
+        // {
+        //   path: '/details',
+        //   components: {
+        //     default: details
+        //   }
+        // }
+
+    ]
+})

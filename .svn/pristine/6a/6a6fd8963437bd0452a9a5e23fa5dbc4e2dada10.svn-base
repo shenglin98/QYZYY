@@ -1,0 +1,1317 @@
+import api from '../../api/index'
+
+export default {
+  components: {
+    
+  },
+  data () {
+    return {
+        regid:'',   //路由的id
+        regids:'',
+        orderList:[
+            {
+              combinename:'内科',
+              active:true,
+              image:'../../../static/image/nei.png'
+            },
+            {
+              combinename:'外科检查',
+              active:false,
+              image:'../../../static/image/waike.png'
+            },
+            {
+              combinename:'五官科检查',
+              active:false,
+              image:'../../../static/image/wuguan.png'
+            },
+            {
+              combinename:'肝功七项',
+              active:false,
+              image:'../../../static/image/gan.png'
+            },
+            {
+              combinename:'肾功四项',
+              active:false,
+              image:'../../../static/image/sheng.png'
+            },
+            {
+              combinename:'肝胆脾胰B超',
+              active:false,
+              image:'../../../static/image/gandan.png'
+            },
+        ],
+        user:[
+          {
+            itemname:'腰围',
+            result:'78',
+            unit:'CM',
+            reslower:'',
+            resupper:'',
+          },
+          {
+            itemname:'身高',
+            result:'173',
+            unit:'CM',
+            reslower:'',
+            resupper:'',
+          },
+          {
+            itemname:'体重',
+            result:'88',
+            unit:'KG',
+            reslower:'',
+            resupper:'',
+          },
+          {
+            itemname:'血压',
+            result:'120/95',
+            unit:'mmHg',
+            reslower:'',
+            resupper:'',
+          },
+          {
+            itemname:'心率',
+            result:'75',
+            unit:'次/分',
+            reslower:'',
+            resupper:'',
+          },
+        ],
+        xiaojie:'1.体指数BMI:29.4肥胖 2.血压:120/95。',
+
+        report:[//左边栏
+      ],
+        images:'../../../static/image/sheng.png',//随便图片
+        imgags:'../../../static/image/wuguan.png',
+        hue:0,
+        Data_name:'',
+        reportone:[],
+        reportwo:[],
+        value:'',
+        activeName: 'first',
+        summary:'',//总检综述
+        healthy:[],//健康建议
+
+
+        xxx:{
+          "count": 1,
+          "result": {
+            "departitems": [
+              {
+                "deptcode": "1",
+                "deptname": "内科",
+                "combineitems": [
+                  {
+                    "deptcode": "1",
+                    "deptname": "内科检查",
+                    "combinecode": "8300",
+                    "combinename": "内科检查",
+                    "resulttype": "01",
+                    "viewgroup": "1",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "赵思文",
+                    "checkdate": "",
+                    "items": [
+                      {
+                        "itemcode": "1",
+                        "itemname": "心律",
+                        "result": "整齐",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "10",
+                        "itemname": "心率",
+                        "result": "71",
+                        "unit": "次/分",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "13",
+                        "itemname": "肺部",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "1898",
+                        "itemname": "腹部",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "2",
+                        "itemname": "杂音",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "4",
+                        "itemname": "肝脏",
+                        "result": "未触及",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "4538",
+                        "itemname": "营养",
+                        "result": "良好",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "5",
+                        "itemname": "脾脏",
+                        "result": "未触及",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "5222",
+                        "itemname": "既往史",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "5237",
+                        "itemname": "血压",
+                        "result": "117/82",
+                        "unit": "mmHg",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "538",
+                        "itemname": "发育",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "732",
+                        "itemname": "其它",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "deptcode": "2",
+                "deptname": "外科",
+                "combineitems": [
+                  {
+                    "deptcode": "2",
+                    "deptname": "外科检查",
+                    "combinecode": "8999",
+                    "combinename": "外科检查",
+                    "resulttype": "01",
+                    "viewgroup": "1",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "郑珣",
+                    "checkdate": "",
+                    "items": [
+                      {
+                        "itemcode": "14",
+                        "itemname": "四肢",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "15",
+                        "itemname": "关节",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "18",
+                        "itemname": "淋巴结",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "20",
+                        "itemname": "疝气",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "21",
+                        "itemname": "皮肤",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "2135",
+                        "itemname": "脊柱",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "22",
+                        "itemname": "甲状腺",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "25",
+                        "itemname": "其它",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "5949",
+                        "itemname": "既往史",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "deptcode": "3",
+                "deptname": "眼科",
+                "combineitems": [
+                  {
+                    "deptcode": "3",
+                    "deptname": "眼科检查",
+                    "combinecode": "8305",
+                    "combinename": "眼科检查",
+                    "resulttype": "01",
+                    "viewgroup": "1",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "谢子凡",
+                    "checkdate": "",
+                    "items": [
+                      {
+                        "itemcode": "536",
+                        "itemname": "外眼(左)",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "537",
+                        "itemname": "外眼(右)",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "5945",
+                        "itemname": "既往史",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "74",
+                        "itemname": "视力(左)",
+                        "result": "1.0",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "75",
+                        "itemname": "矫正视力(左)",
+                        "result": ".",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "76",
+                        "itemname": "辨色力",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "79",
+                        "itemname": "其它",
+                        "result": "未见异常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "80",
+                        "itemname": "视力(右)",
+                        "result": "1.0",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "81",
+                        "itemname": "矫正视力(右)",
+                        "result": ".",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "deptcode": "4",
+                "deptname": "耳鼻喉科",
+                "combineitems": [
+                  {
+                    "deptcode": "4",
+                    "deptname": "耳鼻喉科检查",
+                    "combinecode": "8304",
+                    "combinename": "耳鼻喉科检查",
+                    "resulttype": "01",
+                    "viewgroup": "1",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "1.咽喉：扁桃体肥大。",
+                    "doctorname": "宗凌",
+                    "checkdate": "",
+                    "items": [
+                      {
+                        "itemcode": "20453",
+                        "itemname": "既往史",
+                        "result": "无",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "2107",
+                        "itemname": "听力(右)",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "30",
+                        "itemname": "鼻",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "31",
+                        "itemname": "咽喉",
+                        "result": "扁桃体肥大",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "33",
+                        "itemname": "其它",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "4457",
+                        "itemname": "听力(左)",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "520",
+                        "itemname": "耳(左)",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      },
+                      {
+                        "itemcode": "521",
+                        "itemname": "耳(右)",
+                        "result": "正常",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "deptcode": "19",
+                "deptname": "放射科",
+                "combineitems": [
+                  {
+                    "deptcode": "19",
+                    "deptname": "X线胸部正位",
+                    "combinecode": "20121",
+                    "combinename": "X线胸部正位",
+                    "resulttype": "04",
+                    "viewgroup": "3",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "双肺及心膈未见异常。",
+                    "doctorname": "吴长伟",
+                    "checkdate": "2023-04-23 10:42:20",
+                    "items": [
+                      {
+                        "itemcode": "20121",
+                        "itemname": "胸部正位",
+                        "result": "胸廓对称，气管居中，纵隔不宽；双侧肺野清晰，肺纹理走向规则，未见实质性病变；心影大小形态正常；双侧膈面光滑，肋膈角锐利。\r\n",
+                        "unit": "",
+                        "tips": "",
+                        "reslower": "",
+                        "resupper": "",
+                        "resexp": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "deptcode": "25",
+                "deptname": "检验科",
+                "combineitems": [
+                  {
+                    "deptcode": "25",
+                    "deptname": "血常规+SAA",
+                    "combinecode": "204772",
+                    "combinename": "血常规+SAA",
+                    "resulttype": "02",
+                    "viewgroup": "2",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "林艳芬",
+                    "checkdate": "2023-04-23 10:27:14",
+                    "items": [
+                      {
+                        "itemcode": "14047",
+                        "itemname": "白细胞计数(WBC)",
+                        "result": "7.02",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "3.5",
+                        "resupper": "9.5",
+                        "resexp": "3.5-9.5"
+                      },
+                      {
+                        "itemcode": "14740",
+                        "itemname": "平均血小板体积(MPV)",
+                        "result": "10.7",
+                        "unit": "fL",
+                        "tips": "",
+                        "reslower": "7.6",
+                        "resupper": "13.2",
+                        "resexp": "7.6-13.2"
+                      },
+                      {
+                        "itemcode": "15643",
+                        "itemname": "大血小板比例(P-LCR)",
+                        "result": "31",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "13",
+                        "resupper": "43",
+                        "resexp": "13-43"
+                      },
+                      {
+                        "itemcode": "15644",
+                        "itemname": "红细胞计数(RBC)",
+                        "result": "5.14",
+                        "unit": "10^12/L",
+                        "tips": "",
+                        "reslower": "4.3",
+                        "resupper": "5.8",
+                        "resexp": "4.3-5.8"
+                      },
+                      {
+                        "itemcode": "15646",
+                        "itemname": "血红蛋白(HGB)",
+                        "result": "151",
+                        "unit": "g/L",
+                        "tips": "",
+                        "reslower": "130",
+                        "resupper": "175",
+                        "resexp": "130-175"
+                      },
+                      {
+                        "itemcode": "15647",
+                        "itemname": "红细胞压积(HCT)",
+                        "result": "45.5",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "40",
+                        "resupper": "50",
+                        "resexp": "40-50"
+                      },
+                      {
+                        "itemcode": "15648",
+                        "itemname": "平均红细胞体积(MCV)",
+                        "result": "89",
+                        "unit": "fL",
+                        "tips": "",
+                        "reslower": "82",
+                        "resupper": "100",
+                        "resexp": "82-100"
+                      },
+                      {
+                        "itemcode": "15649",
+                        "itemname": "平均RBC血红蛋白量(MCH)",
+                        "result": "29",
+                        "unit": "pg",
+                        "tips": "",
+                        "reslower": "27",
+                        "resupper": "34",
+                        "resexp": "27-34"
+                      },
+                      {
+                        "itemcode": "15650",
+                        "itemname": "平均RBC血红蛋白浓度(MCHC)",
+                        "result": "332",
+                        "unit": "g/L",
+                        "tips": "",
+                        "reslower": "316",
+                        "resupper": "354",
+                        "resexp": "316-354"
+                      },
+                      {
+                        "itemcode": "15651",
+                        "itemname": "血小板计数(PLT)",
+                        "result": "234",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "125",
+                        "resupper": "350",
+                        "resexp": "125-350"
+                      },
+                      {
+                        "itemcode": "15654",
+                        "itemname": "血小板分布宽度(PDW)",
+                        "result": "12.8",
+                        "unit": "fL",
+                        "tips": "",
+                        "reslower": "9.5",
+                        "resupper": "13.5",
+                        "resexp": "9.5-13.5"
+                      },
+                      {
+                        "itemcode": "15657",
+                        "itemname": "血小板压积(PCT)",
+                        "result": "0.25",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "0.17",
+                        "resupper": "0.35",
+                        "resexp": "0.17-0.35"
+                      },
+                      {
+                        "itemcode": "15658",
+                        "itemname": "分叶细胞绝对值(NEUT)",
+                        "result": "3.36",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "1.80",
+                        "resupper": "6.30",
+                        "resexp": "1.80-6.30"
+                      },
+                      {
+                        "itemcode": "15659",
+                        "itemname": "分叶细胞比例(NEUTr)",
+                        "result": "47.90",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "40",
+                        "resupper": "75",
+                        "resexp": "40-75"
+                      },
+                      {
+                        "itemcode": "15660",
+                        "itemname": "淋巴细胞绝对值(LYMPH)",
+                        "result": "2.95",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "1.10",
+                        "resupper": "3.20",
+                        "resexp": "1.10-3.20"
+                      },
+                      {
+                        "itemcode": "15661",
+                        "itemname": "淋巴细胞比例(LYMPHr)",
+                        "result": "42.00",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "20",
+                        "resupper": "50",
+                        "resexp": "20-50"
+                      },
+                      {
+                        "itemcode": "15662",
+                        "itemname": "单核细胞比例(MONOr)",
+                        "result": "7.70",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "3.0",
+                        "resupper": "10.0",
+                        "resexp": "3.0-10.0"
+                      },
+                      {
+                        "itemcode": "15663",
+                        "itemname": "单核细胞绝对值(MONO)",
+                        "result": "0.54",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "0.10",
+                        "resupper": "0.60",
+                        "resexp": "0.10-0.60"
+                      },
+                      {
+                        "itemcode": "15664",
+                        "itemname": "嗜酸细胞比例(EOr)",
+                        "result": "2.10",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "0.40",
+                        "resupper": "8.00",
+                        "resexp": "0.40-8.00"
+                      },
+                      {
+                        "itemcode": "15665",
+                        "itemname": "嗜酸细胞绝对值(EO)",
+                        "result": "0.15",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "0.02",
+                        "resupper": "0.52",
+                        "resexp": "0.02-0.52"
+                      },
+                      {
+                        "itemcode": "15666",
+                        "itemname": "嗜碱细胞绝对值(BASO)",
+                        "result": "0.02",
+                        "unit": "10^9/L",
+                        "tips": "",
+                        "reslower": "0",
+                        "resupper": "0.06",
+                        "resexp": "0-0.06"
+                      },
+                      {
+                        "itemcode": "15667",
+                        "itemname": "嗜碱细胞比例(BASOr)",
+                        "result": "0.30",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "0",
+                        "resupper": "1.00",
+                        "resexp": "0-1.00"
+                      },
+                      {
+                        "itemcode": "20985",
+                        "itemname": "血清淀粉样蛋白A(SAA)",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21030",
+                        "itemname": "幼核(手工)",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21031",
+                        "itemname": "杆核(手工)",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21032",
+                        "itemname": "分叶核(分叶核(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21033",
+                        "itemname": "淋巴细胞(淋巴(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21034",
+                        "itemname": "单核细胞(单核(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21035",
+                        "itemname": "嗜酸性白细胞(嗜酸(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21036",
+                        "itemname": "嗜碱性白细胞(嗜碱(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21037",
+                        "itemname": "异淋(手工)",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "21038",
+                        "itemname": "髓细胞(手工)",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "LIS208",
+                        "itemname": "分叶核(分叶核(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "LIS219",
+                        "itemname": "杆核",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "LIS336",
+                        "itemname": "淋巴细胞(淋巴(手工))",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "LIS564",
+                        "itemname": "幼核",
+                        "result": "",
+                        "unit": null,
+                        "tips": null,
+                        "reslower": null,
+                        "resupper": null,
+                        "resexp": null
+                      },
+                      {
+                        "itemcode": "LIS98",
+                        "itemname": "RBC分布宽度CV(RDW-CV)",
+                        "result": "12.8",
+                        "unit": "%",
+                        "tips": "",
+                        "reslower": "11.5",
+                        "resupper": "14.5",
+                        "resexp": "11.5-14.5"
+                      },
+                      {
+                        "itemcode": "LIS99",
+                        "itemname": "RBC分布宽度SD(RDW-SD)",
+                        "result": "42",
+                        "unit": "fL",
+                        "tips": "",
+                        "reslower": "37",
+                        "resupper": "47",
+                        "resexp": "37-47"
+                      }
+                    ]
+                  },
+                  {
+                    "deptcode": "25",
+                    "deptname": "尿素(酶促动力学法BUN)",
+                    "combinecode": "8514",
+                    "combinename": "尿素(酶促动力学法BUN)",
+                    "resulttype": "02",
+                    "viewgroup": "2",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "黄远荀",
+                    "checkdate": "2023-04-23 11:21:05",
+                    "items": [
+                      {
+                        "itemcode": "15616",
+                        "itemname": "尿素(UREA)",
+                        "result": "5.64",
+                        "unit": "mmol/L",
+                        "tips": "",
+                        "reslower": "3.10",
+                        "resupper": "8.00",
+                        "resexp": "3.10-8.00"
+                      }
+                    ]
+                  },
+                  {
+                    "deptcode": "25",
+                    "deptname": "肝功5项(hep5)",
+                    "combinecode": "8557",
+                    "combinename": "肝功5项(hep5)",
+                    "resulttype": "02",
+                    "viewgroup": "2",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "黄远荀",
+                    "checkdate": "2023-04-23 11:21:05",
+                    "items": [
+                      {
+                        "itemcode": "14042",
+                        "itemname": "微量白蛋白定量(ALB)",
+                        "result": "47.3",
+                        "unit": "g/L",
+                        "tips": "",
+                        "reslower": "40",
+                        "resupper": "55",
+                        "resexp": "40-55"
+                      },
+                      {
+                        "itemcode": "14044",
+                        "itemname": "白蛋白/球蛋白(A/G)",
+                        "result": "1.65",
+                        "unit": "ratio",
+                        "tips": "",
+                        "reslower": "1.2",
+                        "resupper": "2.4",
+                        "resexp": "1.2-2.4"
+                      },
+                      {
+                        "itemcode": "14223",
+                        "itemname": "γ-谷氨酰基转移酶(GGT)",
+                        "result": "20",
+                        "unit": "U/L",
+                        "tips": "",
+                        "reslower": "10",
+                        "resupper": "60",
+                        "resexp": "10-60"
+                      },
+                      {
+                        "itemcode": "14224",
+                        "itemname": "丙氨酸氨基转移酶(ALT)",
+                        "result": "16",
+                        "unit": "U/L",
+                        "tips": "",
+                        "reslower": "9",
+                        "resupper": "50",
+                        "resexp": "9-50"
+                      },
+                      {
+                        "itemcode": "14226",
+                        "itemname": "AST/ALT(AST/ALT)",
+                        "result": "1.12",
+                        "unit": "Ratio",
+                        "tips": "",
+                        "reslower": "1",
+                        "resupper": "1.15",
+                        "resexp": "1-1.15"
+                      },
+                      {
+                        "itemcode": "14227",
+                        "itemname": "天门冬氨酸氨基转移酶(AST)",
+                        "result": "18",
+                        "unit": "U/L",
+                        "tips": "",
+                        "reslower": "15",
+                        "resupper": "40",
+                        "resexp": "15-40"
+                      },
+                      {
+                        "itemcode": "14554",
+                        "itemname": "球蛋白(GLB)",
+                        "result": "28.7",
+                        "unit": "g/L",
+                        "tips": "",
+                        "reslower": "20",
+                        "resupper": "40",
+                        "resexp": "20-40"
+                      },
+                      {
+                        "itemcode": "15620",
+                        "itemname": "总蛋白(PROT)",
+                        "result": "76.0",
+                        "unit": "g/L",
+                        "tips": "",
+                        "reslower": "65",
+                        "resupper": "85",
+                        "resexp": "65-85"
+                      }
+                    ]
+                  },
+                  {
+                    "deptcode": "25",
+                    "deptname": "葡萄糖(GLU)(各种酶法)(各种标本)",
+                    "combinecode": "8502",
+                    "combinename": "葡萄糖(GLU)(各种酶法)(各种标本)",
+                    "resulttype": "02",
+                    "viewgroup": "2",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "黄远荀",
+                    "checkdate": "2023-04-23 11:21:05",
+                    "items": [
+                      {
+                        "itemcode": "14530",
+                        "itemname": "葡萄糖(GLU)",
+                        "result": "4.83",
+                        "unit": "mmol/L",
+                        "tips": "",
+                        "reslower": "3.9",
+                        "resupper": "6.1",
+                        "resexp": "3.9-6.1"
+                      }
+                    ]
+                  },
+                  {
+                    "deptcode": "25",
+                    "deptname": "肌酐(酶促动力学法CR)",
+                    "combinecode": "8515",
+                    "combinename": "肌酐(酶促动力学法CR)",
+                    "resulttype": "02",
+                    "viewgroup": "2",
+                    "status": 2,
+                    "abaflag": 0,
+                    "conclusion": "未见明显异常。",
+                    "doctorname": "黄远荀",
+                    "checkdate": "2023-04-23 11:21:05",
+                    "items": [
+                      {
+                        "itemcode": "15617",
+                        "itemname": "肌酐(CREA)",
+                        "result": "107",
+                        "unit": "umol/L",
+                        "tips": "",
+                        "reslower": "62",
+                        "resupper": "115",
+                        "resexp": "62-115"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "message": "操作成功",
+          "code": 200,
+          "systemWarn": ""
+        }
+        
+    }
+  },
+  created () {
+    // console.log(this.$route.query.id);
+    // this.regid = this.$route.query.id
+    // this.getAllCheck();   
+    
+    // console.log(this.$route.query.obj,'aaaaaaaaaaaaaaaaaaaaa');
+    this.regids = this.$route.query.obj;
+    this.value = this.$route.query.obj;
+    // this.GLOBAL.codes = this.$route.query.obj;
+    this.ReportDetails();
+    this.activeindex(0,0);
+
+  },
+  mounted() {
+  },
+  methods: {
+
+    activeindex(item,index,e){
+      let this_ = this;
+      this.hue = index;
+      // console.log('当前index',index);
+      console.log(item,'点击中的tab');
+      if (item!=0) {
+        this.Data_name = item.deptname;
+          this.reportone = item.combineitems
+
+          // item.combineitems.forEach((item)=>{
+          // this.reportwo = item.items;
+          // console.log( this.reportwo);
+          // })
+      }
+    },
+
+  //  总检
+    async activeindextwo(e){
+      // console.log(this.regids);
+      this.hue = e;
+      // this.Data_name='General_inspection'
+      // const {data} = await api.home.General_inspection({
+
+      this.Data_name='CustomerReportTotalCheckDetail'
+      const {data} = await api.home.HealthCheckForH5({
+      // whereitems:[
+      //       {
+      //       "key": "regid",
+      //       "value": this.value
+      //       },
+      //   ]
+      key: "",
+      id: "",
+      code: this.value,
+      type: 0,
+      tableName: "",
+      businesstype: 'CustomerReportTotalCheckDetail',
+      // whereitems: [
+      //   {
+      //     key: this.keys,
+      //     value: this.$route.query.obj,
+      //   },
+      // ]
+    })
+    console.log('总检接口返回的数据',data);
+    this.summary = data.result.conclusiontext;
+    // console.log(data.result.conclusiontext,'pppppppppppp');
+    // console.log(data.result.worditems,'data.result.worditems');
+    data.result.worditems.forEach(item=>{
+      // console.log(item,'健康建议');
+      this.healthy = item.wordname;
+      // console.log('健康建议',this.healthy);
+    })
+    },
+
+    // 总检选项卡
+    handleClick(tab, event) {
+      // console.log('vvvvvvvvvvvvvvvvvvvv',tab, event);
+    },
+
+    async ReportDetails(){
+      let this_ = this;
+      // const {data} = await api.home.Report_details(//原本
+      const {data} = await api.home.HealthCheckForH5(
+          // {regid:this.regids}
+          { key: "",
+            id: "",
+            code: this.regids,
+            type: 0,
+            tableName: "",
+            businesstype: 'CustomerReportDetail',
+             whereitems: [ {key: this.keys, value: this.$route.query.obj,},]
+        });
+      this.report = data.result.departitems;
+      this.Data_name = data.result.departitems[0].deptname;
+      if (data.result.departitems.length) {
+        this.length = data.result.departitems.length;
+      }
+      // console.log(data,'点击每个用户查看详情的总数据');
+      this.reportone = data.result.departitems[0].combineitems;
+      // console.log(this.Data_name,'页面进来时加载的报告');
+      // console.log('this.reportone',this.reportone);
+      data.result.departitems[0].combineitems.forEach(function(e) {
+      this_.reportwo=e.items;
+    });
+
+
+
+    //   this.report = this.xxx.result.departitems;
+    //   this.Data_name = this.xxx.result.departitems[0].deptname;
+    //   if (this.xxx.result.departitems.length) {
+    //     this.length = this.xxx.result.departitems.length;
+    //   }
+    //   // console.log(data,'点击每个用户查看详情的总数据');
+    //   this.reportone = this.xxx.result.departitems[0].combineitems;
+    //   // console.log(this.Data_name,'页面进来时加载的报告');
+    //   // console.log('this.reportone',this.reportone);
+    //   this.xxx.result.departitems[0].combineitems.forEach(function(e) {
+    //   this_.reportwo=e.items;
+    // });
+    // console.log(this.xxx.result.departitems,'this.xxx.result.departitems;');
+
+    },
+
+
+    tabSwitch(){
+
+    },
+
+    // async getAllCheck(){
+        // const {data} = await api.home.DepartCheckAllCheck({
+            // regid:this.regid
+            // regid:this.regids
+        // })
+        // console.log(data);
+        // this.orderList = data.result
+    // }
+  },
+
+  beforeDestroy(){
+    
+  },
+  watch: {
+    
+  },
+}

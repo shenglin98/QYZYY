@@ -1,0 +1,305 @@
+<template>
+  <div class="unitInfo">
+    <div class="mainbody">
+      <!-- 单位信息 -->
+      <div class="unit_mess">
+        <div class="title_b">
+          <div class="title_text">单位信息</div>
+        </div>
+        <van-cell-group>
+          <van-cell title="单位名称" :value="unitInfo.companyname" />
+          <van-cell
+            title="体检时间"
+            :value="`${unitInfo.startdate || ''} 至 ${unitInfo.enddate || ''}`"
+          />
+          <van-cell title="体检分组">
+            <template #default>
+              <div @click="handleJumpSelectGroup">
+                <div
+                  style="color: #1989fa"
+                  v-if="isOptional && unitInfo.groupcode == ''"
+                >
+                  暂无套餐　　请选择<van-icon name="arrow" />
+                </div>
+                <div
+                  v-if="unitInfo.groupcode"
+                  style="display: flex; justify-content: flex-end"
+                >
+                  <div>{{ unitInfo.groupname }}</div>
+                  <div style="color: #1989fa">
+                    修改<van-icon name="arrow" />
+                  </div>
+                </div>
+              </div>
+            </template>
+            <!-- <template #default>
+              <div v-if="isOptional" @click="handleJumpSelectGroup">
+                <div
+                  style="color: #1989fa"
+                  v-if="isOptional && unitInfo.groupcode == ''"
+                >
+                  暂无套餐　　请选择<van-icon name="arrow" />
+                </div>
+                <div
+                  v-if="unitInfo.groupcode"
+                  style="display: flex; justify-content: flex-end"
+                >
+                  <div>{{ unitInfo.groupname }}</div>
+                  <div style="color: #1989fa">
+                    修改<van-icon name="arrow" />
+                  </div>
+                </div>
+              </div>
+              <div v-else>{{ unitInfo.groupname }}</div>
+            </template> -->
+          </van-cell>
+          <van-cell title="检查项目">
+            <template #default>
+              {{ unitInfo.checkitemdes }}
+            </template>
+          </van-cell>
+          <van-cell title="费用定额">
+            <template #default>
+              {{ unitInfo.quota }}
+            </template>
+          </van-cell>
+        </van-cell-group>
+      </div>
+      <!-- 个人信息 -->
+      <div class="person_mess">
+        <div class="title_b">
+          <div class="title_text">个人信息</div>
+        </div>
+        <van-cell-group>
+          <van-cell title="姓名" :value="unitInfo.name" />
+          <van-cell
+            title="性别"
+            :value="
+              unitInfo.sex == 0
+                ? '未知'
+                : unitInfo.sex == 1
+                ? '男'
+                : unitInfo.sex == 2
+                ? '女'
+                : ''
+            "
+          />
+          <van-cell title="年龄" :value="`${unitInfo.age || ''} 岁`" />
+          <van-cell title="婚否" :value="unitInfo.marriage" />
+          <van-cell title="电话" :value="unitInfo.telephone" />
+          <van-cell title="部门" :value="unitInfo.department" />
+        </van-cell-group>
+      </div>
+      <!-- 温馨提示 -->
+      <div class="tips_mess">
+        <div class="title_b">
+          <div class="title_text">温馨提示</div>
+        </div>
+        <div class="content_tips" v-html="unitInfo.remark"></div>
+      </div>
+      <!-- 底部按钮 -->
+      <div class="bottom_btn">
+        <van-button
+          round
+          color="#27a7e0"
+          type="primary"
+          size="large"
+          @click="handleSubmitTo"
+          >开始预约</van-button
+        >
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import { getUnitInfo } from "@/api/unit.js";
+export default {
+  name: "",
+
+  components: {},
+
+  data() {
+    return {
+      search: "",
+      unitInfo: {},
+      setmealcode: "",
+      setmealInfo: "",
+      isOptional: false,
+      selectGroup: undefined,
+    };
+  },
+
+  mounted() {
+    this.search = this.$route.query.search || "";
+    let data = this.$route.query.selectGroup || undefined;
+    if (!this.search) {
+      this.$toast.fail("获取查询信息失败!");
+      return;
+    }
+    data && (this.selectGroup = JSON.parse(decodeURIComponent(data)));
+    this.handleGetUnitInfo(); // 获取页面信息
+  },
+
+  methods: {
+    // 点击选择分组项目
+    handleJumpSelectGroup() {
+      this.$router.push({
+        path: "selectGroup",
+        query: { search: this.search, sex: this.unitInfo.sex,age: this.unitInfo.age },
+      });
+    },
+    // 开始预约回调
+    handleSubmitTo() {
+      if (!this.unitInfo.regid) {
+        this.$toast.fail("查询不到预约信息!");
+        return;
+      }
+      if (!this.unitInfo.groupcode) {
+        this.$toast.fail("请先选中体检分组!");
+        return;
+      }
+      // 储存单位个人信息
+      localStorage.setItem("companyUserInfo", JSON.stringify(this.unitInfo));
+      localStorage.setItem("setmealInfo", JSON.stringify(this.setmealInfo));
+      this.$router.push({
+        path: "setmealDetails",
+      });
+    },
+    // 获取页面信息
+    handleGetUnitInfo() {
+      getUnitInfo({
+        businesstype: "CompanyRegisterInfo",
+        code: this.search,
+      }).then((res) => {
+        if (res.data.count == 0) {
+          this.$toast.fail(res.data.message);
+          this.$router.push("/unitReserva");
+        }
+        if (!res.data.result) return;
+        this.unitInfo = res.data.result;
+        if (this.unitInfo.groupcode == "") {
+          this.isOptional = true;
+        }
+        if (this.selectGroup) {
+          this.$nextTick(() => {
+            this.unitInfo.groupcode = this.selectGroup.groupcode;
+            this.unitInfo.groupname = this.selectGroup.groupname;
+            this.unitInfo.checkitemdes = this.selectGroup.checkitemdes;
+            this.unitInfo.price = this.selectGroup.price;
+            this.unitInfo.remark = this.selectGroup.remark;
+          });
+        }
+        this.$nextTick(() => {
+          let whereitems = [
+            {
+              key: "companycode",
+              value: this.unitInfo.companycode,
+            },
+            {
+              key: "batch",
+              value: this.unitInfo.batch,
+            },
+            {
+              key: "groupcode",
+              value: this.unitInfo.groupcode,
+            },
+          ];
+          getUnitInfo({
+            businesstype: "GroupDetail",
+            whereitems,
+          }).then((result) => {
+            if (!result.data.result) return;
+            this.setmealInfo = result.data.result;
+          });
+        });
+      });
+    },
+  },
+
+  watch: {},
+
+  computed: {},
+};
+</script>
+<style lang='scss' scoped>
+.unitInfo {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 5px;
+  .mainbody::-webkit-scrollbar {
+    display: none;
+  }
+  .mainbody {
+    height: 100%;
+    box-sizing: border-box;
+    padding-bottom: 40px;
+    // background-color: #fff;
+    // border-radius: 5px;
+    overflow-y: auto;
+    .title_b {
+      height: 38px;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      .title_text {
+        width: 90px;
+        height: 28px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f2f2f2;
+        border-radius: 20px;
+      }
+    }
+    .unit_mess,
+    .person_mess,
+    .tips_mess {
+      box-sizing: border-box;
+      padding: 10px;
+      background-color: #fff;
+      border-radius: 5px;
+    }
+    .bottom_btn {
+      margin-top: 12px;
+      text-align: center;
+      .van-button {
+        width: 80%;
+      }
+    }
+    .person_mess {
+      margin-top: 12px;
+    }
+    .tips_mess {
+      margin-top: 12px;
+      .content_tips {
+        font-size: 14px;
+      }
+    }
+  }
+}
+</style>
+<style lang="scss">
+.unitInfo {
+  .mainbody {
+    .unit_mess,
+    .person_mess {
+      .van-cell-group {
+        .van-cell {
+          .van-cell__title {
+            flex: unset;
+            width: 23% !important;
+            font-weight: 600;
+          }
+          .van-cell__value {
+            flex: unset;
+            width: 75% !important;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

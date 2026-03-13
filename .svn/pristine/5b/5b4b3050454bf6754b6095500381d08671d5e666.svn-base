@@ -1,0 +1,44 @@
+module.exports = {
+    filenameHashing: true, // 默认开启
+    configureWebpack: {
+        output: {
+            filename: '[name].[contenthash:8].js',
+            chunkFilename: '[name].[contenthash:8].js'
+        },
+        devtool: 'source-map'
+    },
+    // configureWebpack: {
+    //     devtool: 'source-map'
+    // },
+    transpileDependencies: [/node_modules/],
+    pages: {
+        index: {
+            // add here ---start---
+            entry: ['node_modules/babel-polyfill/dist/polyfill.js', 'src/main.js'],
+            // add here ---end---
+            template: 'public/index.html',
+            filename: 'index.html',
+            chunks: ['chunk-vendors', 'chunk-common', 'index'],
+        },
+    },
+    lintOnSave: false,
+    productionSourceMap: false,
+    publicPath: "/",
+    outputDir: "dist",
+    assetsDir: "static",
+    devServer: {
+        proxy: {
+            '/apiWxUnifiedOrder': {
+                target: 'http://101.200.229.181:8030/api-pay/Payment/WxUnifiedOrder',
+                changeOrigin: true,
+            },
+            // '/api-pay': {
+            //     target: 'http://101.200.229.181:8030',
+            //     changeOrigin: true,
+            //     pathRewrite: {
+            //         '^/api-pay': '/api-pay'
+            //     }
+            // },
+        }
+    }
+}

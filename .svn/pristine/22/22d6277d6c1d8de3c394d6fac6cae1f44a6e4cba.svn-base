@@ -1,0 +1,48 @@
+.index{
+    width: 100%;
+    overflow-y: hidden;
+    display: flex;
+    justify-content: center;
+    .ipt_box{
+        // background: red;
+        width: 95%;
+        // margin-top: 20px;
+        .title{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 18px;
+            font-family: PingFangSC-Medium, PingFang SC;
+            font-weight: 500;
+            color: #073237;
+            padding: 11px 0 22px 0;
+            img{
+                width: 30%;
+            }
+        }
+
+        // 用户信息表单
+        .Information_sheet{
+            width: 100%;
+            min-height: 400px;
+            // background: red;
+            // .red{
+            //     color:#27a7e0;
+            // }
+            // .text{
+            //     border-bottom: 1px solid red;
+            // }
+        }
+    }
+}
+// input{
+//     border-radius: 22px;
+//     border: 1px solid #979797;
+//     width: 100%;
+//     height: 44px;
+//     text-align: center;
+//     font-size: 15px;
+//     font-family: PingFangSC-Regular, PingFang SC;
+//     font-weight: 400;
+//     color: #7C8586;
+// }

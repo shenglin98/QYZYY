@@ -1,0 +1,1871 @@
+<template>
+  <div class="reservaInfo">
+    <!-- 主体 -->
+    <div class="mainbody">
+      <van-form class="pageform">
+        <!-- 姓名 -->
+        <div class="name_box">
+          <van-field
+            v-model="pageForm.name"
+            name="姓名"
+            label="姓名"
+            placeholder="（必填）请输入姓名"
+            :rules="[{ required: true, message: '请填写姓名' }]"
+            :disabled="personalflag == 1"
+          />
+          <van-button
+            plain
+            round
+            size="mini"
+            type="info"
+            @click="handleCheckShowPerson"
+            >选择体检人</van-button
+          >
+        </div>
+        <!-- 证件类型 -->
+        <van-field
+          readonly
+          clickable
+          name="picker"
+          :value="pageForm.idcardcn"
+          label="证件类型"
+          placeholder="点击选择证件类型"
+          @click="personalflag != 1 && (showPelsidtype = true)"
+          :disabled="personalflag == 1"
+        />
+        <!-- 身份证 -->
+        <van-field
+          v-model="pageForm.idcard"
+          name="身份证"
+          label="身份证"
+          placeholder="身份证"
+          :rules="[{ required: true, message: '请填写身份证' }]"
+          :disabled="personalflag == 1"
+          @blur="handleCheckIdcard"
+        />
+        <!-- 性别 -->
+        <van-field name="radio" label="性别">
+          <template #input>
+            <van-radio-group
+              :disabled="personalflag == 1"
+              v-model="pageForm.sex"
+              direction="horizontal"
+            >
+              <van-radio :name="1">男</van-radio>
+              <van-radio :name="2">女</van-radio>
+            </van-radio-group>
+          </template>
+        </van-field>
+        <!-- 生日 -->
+        <van-field
+          readonly
+          clickable
+          name="date"
+          :value="pageForm.birthday"
+          label="生日"
+          placeholder="请选择生日"
+          @click="personalflag != 1 && (showPicker = true)"
+        />
+        <van-popup
+          v-model="showPicker"
+          position="bottom"
+          :style="{ height: '45%' }"
+        >
+          <van-datetime-picker
+            type="date"
+            item-height="120px"
+            @confirm="handleChangeonBirthday"
+            @cancel="showPicker = false"
+            v-model="relWkibedat"
+            :min-date="minDate"
+            :max-date="maxDate"
+          />
+        </van-popup>
+        <!-- 婚姻状况 -->
+        <van-field name="radio" label="婚姻状况">
+          <template #input>
+            <van-radio-group
+              :disabled="personalflag == 1"
+              v-model="pageForm.marriage"
+              direction="horizontal"
+            >
+              <van-radio name="未婚">未婚</van-radio>
+              <van-radio name="已婚">已婚</van-radio>
+            </van-radio-group>
+          </template>
+        </van-field>
+        <!-- 手机号 -->
+        <van-field
+          v-model="pageForm.telephone"
+          name="手机号"
+          label="手机号"
+          placeholder="手机号"
+          :disabled="personalflag == 1"
+        />
+        <!-- 选择日期 -->
+        <van-cell class="date_box">
+          <div class="title">
+            <van-image class="date_img" :src="dateUrl" />
+            <div class="text">检查日期</div>
+          </div>
+          <div class="content" v-if="chooseDate">
+            {{ chooseDate.titleday || "" }}
+            <!-- {{
+              (this.setcompanymodel == 1 &&
+                this.chooseTimes &&
+                this.chooseTimes.contentkey) ||
+              ""
+            }} -->
+          </div>
+          <div class="btn">
+            <van-button
+              plain
+              round
+              size="mini"
+              type="info"
+              @click="handleCheckDateShow"
+              >请选择</van-button
+            >
+          </div>
+        </van-cell>
+        <!-- 问卷调查 -->
+        <van-cell
+          title="问卷调查"
+          v-if="questionnaireFlag"
+          is-link
+          @click="handleShowQuestionnaire"
+        />
+        <!-- 交通方式 -->
+        <!-- <van-field name="radio" label="交通方式" v-if="personalflag == 1">
+          <template #input>
+            <van-radio-group
+              v-model="pageForm.transport"
+              direction="horizontal"
+            >
+              <van-radio name="惠炼家园">惠炼家园</van-radio>
+              <van-radio name="海惠花园">海惠花园</van-radio>
+              <van-radio name="自驾">自驾</van-radio>
+            </van-radio-group>
+          </template>
+        </van-field> -->
+        <!-- 院区 -->
+        <div class="courtyardarea">
+          <div class="courtyardarea_text">{{ setmealObj.address || "" }}</div>
+          <div class="setmeal_text">{{ setmealObj.setmealname || "" }}</div>
+        </div>
+        <!-- 应付金额 -->
+        <div class="meetprice">
+          <div class="title">应付金额</div>
+          <div class="price">￥{{ totalPrice || 0.0 }}</div>
+        </div>
+        <!-- 实付金额 -->
+        <div class="actualprice">
+          <div class="title">实付金额</div>
+          <div class="price">
+            <div class="p_title">小计：</div>
+            <div class="p_price">￥{{ personPrice || 0.0 }}</div>
+          </div>
+        </div>
+        <!-- 支付方式 -->
+        <div class="paytitle">支付方式</div>
+        <van-radio-group v-model="payment" class="payradio">
+          <van-cell-group>
+            <van-cell clickable @click="pageForm.payment = 'wechatPay'">
+              <template #title>
+                <div class="title_box">
+                  <van-image class="paytitle_img" :src="wechatUrl" />
+                  <div class="title">微信支付</div>
+                </div>
+              </template>
+              <template #right-icon>
+                <van-radio name="wechatPay" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+        </van-radio-group>
+      </van-form>
+      <!-- 底部支付信息 -->
+      <div class="footer">
+        <div class="footer_text">
+          <div class="f_text">微信支付</div>
+          <div class="f_price">￥{{ personPrice || 0.0 }}</div>
+        </div>
+        <van-button
+          round
+          type="info"
+          :loading="loading"
+          size="small"
+          @click="handleSubmitOrder"
+          >提交订单</van-button
+        >
+      </div>
+      <!-- 选择体检人弹框 -->
+      <van-popup
+        v-model="showPerson"
+        class="person_popup"
+        closeable
+        position="bottom"
+        :style="{ height: '80%' }"
+      >
+        <div class="person_content">
+          <van-radio-group v-model="choosePerson" class="personradio">
+            <van-cell-group>
+              <van-cell clickable @click="choosePerson = '1'">
+                <template #title>
+                  <div class="person_box">
+                    <div class="name">微信支付</div>
+                    <div class="sex">男</div>
+                    <div class="age">18岁</div>
+                  </div>
+                </template>
+                <template #right-icon>
+                  <van-radio name="1" />
+                </template>
+              </van-cell>
+              <van-cell clickable @click="choosePerson = '2'">
+                <template #title>
+                  <div class="person_box">
+                    <div class="name">支付宝</div>
+                    <div class="sex">女</div>
+                    <div class="age">25岁</div>
+                  </div>
+                </template>
+                <template #right-icon>
+                  <van-radio name="2" />
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </van-radio-group>
+        </div>
+      </van-popup>
+      <!-- 选择体检日期弹框 -->
+      <van-popup
+        v-model="showPelsDate"
+        class="pelsdate_popup"
+        closeable
+        position="bottom"
+        :style="{ height: '98%' }"
+      >
+        <div class="pelsdate_content">
+          <van-notice-bar
+            class="top_tips"
+            text="平台预约不支持医保卡，体检卡支付"
+          />
+          <div class="top_head">
+            <div class="head_title">
+              检查日期：{{ chooseDate && chooseDate.title }}
+            </div>
+            <van-checkbox
+              v-model="isReserv"
+              icon-size="30px"
+              shape="square"
+              @change="handleChangeIsReserv"
+              >只显示可预约</van-checkbox
+            >
+          </div>
+          <div class="calendar_roll">
+            <div
+              class="calendar_item"
+              :class="chooseDateTitle == item.titleday ? 'calendar_bgl' : ''"
+              v-for="item in calendarData"
+              :key="item.titleday"
+              @click="handleCheckChooseDate(item)"
+            >
+              <div class="week">{{ item.titleweekday }}</div>
+              <div class="date">{{ item.titleday }}</div>
+              <div class="today">{{ item.friendlydate }}</div>
+              <div class="is_reserv">{{ item.contentvalue }}</div>
+            </div>
+          </div>
+          <div class="top_head" v-if="setcompanymodel == 1">
+            <div class="head_title">请选择时段</div>
+          </div>
+          <div class="times_roll" v-if="setcompanymodel == 1 && chooseDate">
+            <div
+              class="times_item"
+              v-for="(itemss, index) in chooseDate.contentitems"
+              :key="index"
+              :class="
+                chooseTimes && chooseTimes.contentkey == itemss.contentkey
+                  ? 'times_bgl'
+                  : ''
+              "
+              @click="handleCheckChooseTimes(itemss)"
+            >
+              <div class="ttititle">{{ itemss.contentkey }}</div>
+              <div class="tticontent">余号：{{ itemss.companycount }}</div>
+            </div>
+          </div>
+          <div class="pelsdate_btn">
+            <van-button
+              type="info"
+              round
+              size="normal"
+              @click="handleCheckDateSubmit"
+              >确 认</van-button
+            >
+          </div>
+        </div>
+      </van-popup>
+      <!-- 证件类型 -->
+      <van-popup
+        v-model="showPelsidtype"
+        :style="{ height: '48%' }"
+        position="bottom"
+      >
+        <van-picker
+          show-toolbar
+          item-height="120px"
+          :columns="idtypeItems"
+          @confirm="handleOnConfirmIdtype"
+          @cancel="showPelsidtype = false"
+        />
+      </van-popup>
+      <!-- 选择体检人弹框 -->
+      <van-popup
+        v-model="showQuestionnaire"
+        class="questionnaire_popup"
+        :close-on-click-overlay="false"
+        position="bottom"
+        :style="{ height: '95%' }"
+      >
+        <div class="btnClose">
+          <van-icon @click="handlePopupClose" name="cross" class="iconClos" />
+          <!-- icon="cross"  -->
+          <!-- <van-button
+            plain
+            hairline
+            size="small"
+            type="default"
+            @touchstart="handlePopupClose"
+            >关 闭</van-button
+          > -->
+        </div>
+        <div class="questionnaire_content">
+          <!-- 内容 -->
+          <div class="life_habit">
+            <!-- 问卷题目 -->
+            <!-- 一级标题questionnairelist -->
+            <div
+              class="Questionnaire"
+              v-for="(k, index) in questionnairelist"
+              :key="index"
+            >
+              <div class="life_habit_title">
+                <h2>{{ k.itemname }}</h2>
+              </div>
+              <div class="life_habit_content">
+                <!-- 二级标题questionnaireitems -->
+                <div
+                  class="basic_information"
+                  v-for="item in k.questionnaireitems"
+                  :key="item.itemcode"
+                >
+                  <div class="two_topic" style="display: block">
+                    <!-- 题目 -->
+                    <span
+                      :style="{
+                        color: item.fillFlag == 1 ? 'red' : '',
+                        display: 'block',
+                      }"
+                      >{{ item.itemname }}</span
+                    >
+                    <!-- 二级选项optionitems -->
+                    <div
+                      class="two_options"
+                      v-for="(value, index) in item.optionitems"
+                      :key="index"
+                    >
+                      <span v-if="value.inputtype === -1">
+                        <template
+                          v-for="(val, index) in value.content
+                            .split('|X|')
+                            .filter((v) => v)"
+                        >
+                          <myInput
+                            :suffix="val"
+                            :disabled="item.editstatus == 1"
+                            :count="
+                              value.content.split('|X|').filter((v) => v).length
+                            "
+                            :item="item"
+                            @updateValue="handleUpdate"
+                            :value.sync="value.remark"
+                            :index="index"
+                            :key="val"
+                          />
+                        </template>
+                      </span>
+                      <van-radio-group
+                        style="width: 100%"
+                        v-model="item.selectvalue"
+                        :disabled="item.editstatus == 1"
+                      >
+                        <van-radio
+                          v-if="[0, 3].indexOf(value.inputtype) !== -1"
+                          :name="value.selectvalue"
+                          @click="handleRadioChange(item)"
+                          style="margin-right: 5px; white-space: normal"
+                          :class="
+                            value.content.indexOf('|X|') !== -1
+                              ? 'radiobox'
+                              : ''
+                          "
+                        >
+                          <span
+                            style="width: 100%; display: flex; flex-wrap: wrap"
+                            v-if="value.content.indexOf('|X|') !== -1"
+                          >
+                            <template
+                              v-for="(val, index) in value.content.split(',')"
+                            >
+                              <myInput
+                                :content="val"
+                                :disabled="val.editstatus == 1"
+                                :draggable="
+                                  value.selectvalue != item.selectvalue
+                                "
+                                :count="value.content.split(',').length"
+                                :value.sync="value.remark"
+                                :index="index"
+                                :key="val"
+                              />
+                            </template>
+                          </span>
+                          <span style="width: 100%" v-else>
+                            {{ value.content }}
+                            <el-input
+                              v-if="[1, 3, 4].indexOf(value.inputtype) !== -1"
+                              size="mini"
+                              :disabled="value.content != item.selectvalue"
+                              v-model="value.remark"
+                              :placeholder="value.content"
+                              style="width: 4rem"
+                            ></el-input>
+                          </span>
+                        </van-radio>
+                      </van-radio-group>
+                      <van-checkbox
+                        v-if="[2, 4].indexOf(value.inputtype) !== -1"
+                        v-model="value.flag"
+                        shape="square"
+                        :name="value.content"
+                        @change="handlechecBox(item, 1)"
+                        :true-label="1"
+                        style="white-space: normal"
+                        :false-label="0"
+                        ><span style="white-space: normal">{{
+                          value.content
+                        }}</span>
+                      </van-checkbox>
+                    </div>
+                    <el-input
+                      v-if="[1, 3, 4].indexOf(item.inputtype) !== -1"
+                      size="mini"
+                      :disabled="item.editstatus == 1"
+                      v-model="item.remark"
+                      placeholder="请输入"
+                      @input="handleInput(item)"
+                      style="width: 4rem"
+                    ></el-input>
+                  </div>
+                  <!-- 三级标题questionnaireitems -->
+                  <div
+                    class="three_topic"
+                    v-for="item in item.questionnaireitems"
+                    :key="item.itemcode"
+                  >
+                    <span
+                      class="spanClas"
+                      v-if="item.itemname.indexOf('|X|') !== -1"
+                    >
+                      <template
+                        v-for="(val, index) in item.itemname.split(',')"
+                      >
+                        <myInput
+                          :content="val"
+                          :count="item.itemname.split(',').length"
+                          :value.sync="item.remark"
+                          :index="index"
+                          :item="item"
+                          @updateValue="handleValue"
+                          :key="val"
+                        />
+                      </template>
+                    </span>
+                    <span class="spanClas" v-else>
+                      {{ item.itemname }}
+                    </span>
+                    <!-- 三级选项optionitems -->
+                    <div class="three_content">
+                      <div
+                        class="three_options"
+                        v-for="(Opitem, index) in item.optionitems"
+                        :key="index"
+                      >
+                        <span v-if="[-1].indexOf(Opitem.inputtype) !== -1">
+                          <span v-if="Opitem.content.indexOf('|X|') !== -1">
+                            <template
+                              v-for="(val, index) in Opitem.content.split(',')"
+                            >
+                              <myInput
+                                :content="val"
+                                :count="Opitem.content.split(',').length"
+                                :value.sync="Opitem.remark"
+                                :index="index"
+                                :item="item"
+                                @updateValue="handleValue"
+                                :key="val"
+                              />
+                            </template>
+                          </span>
+                        </span>
+                        <van-radio-group
+                          v-model="item.selectvalue"
+                          v-if="[0, 3].indexOf(Opitem.inputtype) !== -1"
+                        >
+                          <van-radio
+                            :name="Opitem.content"
+                            @click="handleRadioChange(item)"
+                            style="
+                              margin-right: 5px;
+                              white-space: normal !important;
+                            "
+                          >
+                            <span v-if="Opitem.content.indexOf('|X|') !== -1">
+                              <template
+                                v-for="(val, index) in Opitem.content.split(
+                                  ','
+                                )"
+                              >
+                                <myInput
+                                  :content="val"
+                                  :count="Opitem.content.split(',').length"
+                                  :value.sync="Opitem.remark"
+                                  :index="index"
+                                  :key="val"
+                                />
+                              </template>
+                            </span>
+                            <span v-else> {{ Opitem.content }}</span>
+                          </van-radio>
+                        </van-radio-group>
+                        <van-checkbox
+                          :name="Opitem.hoyname"
+                          v-if="[2, 4].indexOf(Opitem.inputtype) !== -1"
+                          v-model="Opitem.flag"
+                          shape="square"
+                          @change="handlechecBox(item, 2)"
+                          :true-label="1"
+                          :false-label="0"
+                        >
+                          <span v-if="Opitem.content.indexOf('|X|') !== -1">
+                            <template
+                              v-for="(val, index) in Opitem.content.split(',')"
+                            >
+                              <myInput
+                                :content="val"
+                                :disabled="Opitem.flag == 0 ? true : false"
+                                :count="Opitem.content.split(',').length"
+                                :value.sync="Opitem.remark"
+                                :index="index"
+                                :key="val"
+                              />
+                            </template>
+                          </span>
+                          <span v-else> {{ Opitem.content }}</span>
+                        </van-checkbox>
+
+                        <el-input
+                          v-if="[1].indexOf(Opitem.inputtype) !== -1"
+                          size="mini"
+                          v-model="Opitem.remark"
+                          @input="handleValue('', item)"
+                          style="width: 4rem"
+                        ></el-input>
+                        <el-input
+                          v-if="[3, 4].indexOf(Opitem.inputtype) !== -1"
+                          :disabled="Opitem.flag == 0"
+                          size="mini"
+                          v-model="Opitem.remark"
+                          @input="handleValue('', item)"
+                          style="width: 4rem"
+                        ></el-input>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </van-popup>
+    </div>
+  </div>
+</template>
+<script>
+import {
+  getListData,
+  timeStatic,
+  TimeStaticForPerson,
+  addCustomerOrder,
+  saveAppoint,
+  healthCheckForH5Post,
+  questionnaire,
+  Sys_QuestionnaireForH5_ShowCode,
+  CheckQuestionMustInput,
+} from "@/api/reservation.js";
+import myInput from "./input";
+export default {
+  name: "",
+
+  components: {
+    myInput,
+  },
+
+  data() {
+    return {
+      pageForm: {
+        name: "",
+        sex: 0,
+        birthday: "",
+        marriage: "",
+        telephone: "",
+        idcard: "",
+        idtype: "01",
+        idcardcn: "身份证",
+        hiscode: "",
+        healthcard: "",
+        transport: "",
+      },
+      loading: false,
+      payment: "wechatPay",
+      showPicker: false,
+      relWkibedat: new Date("2000/01/01"),
+      minDate: new Date(1900, 0, 1),
+      maxDate: new Date(
+        new Date(+new Date() + 8 * 3600 * 1000)
+          .toJSON()
+          .substr(0, 10)
+          .replace("T", " ")
+      ),
+      dateUrl: require("@/assets/images/date.png"),
+      wechatUrl: require("@/assets/images/wechat.png"),
+      EditOrderid: "",
+      showPerson: false,
+      showPelsDate: false,
+      showPelsidtype: false,
+      choosePerson: "",
+      isReserv: false,
+      calendarData: [],
+      chooseDate: "",
+      chooseTimes: "",
+      chooseDateTitle: "",
+      setmealcode: "",
+      combineitems: [],
+      setmealObj: {},
+      personalflag: "", // 0-个人  1-单位
+      operatorcode: "",
+      idtypeItems: [
+        "身份证",
+        "居民户口簿",
+        "护照",
+        "军官证",
+        "驾驶证",
+        "港澳居民来往内地通行证",
+        "台湾居民来往内地通行证",
+      ],
+      userData: "",
+      checkUserId: "",
+      checkPrice: 0,
+      personPrice: 0,
+      quota: 0,
+      totalPrice: 0,
+      setcompanymodel: 0,
+      showQuestionnaire: false,
+      questionnairelist: [], // 问卷
+      sexradio: [],
+      // idtypeItems: [
+      //   {
+      //     code: "01",
+      //     name: "身份证",
+      //   },
+      //   {
+      //     code: "02",
+      //     name: "居民户口簿",
+      //   },
+      //   {
+      //     code: "03",
+      //     name: "护照",
+      //   },
+      //   {
+      //     code: "04",
+      //     name: "军官证",
+      //   },
+      //   {
+      //     code: "05",
+      //     name: "驾驶证",
+      //   },
+      //   {
+      //     code: "06",
+      //     name: "港澳居民来往内地通行证",
+      //   },
+      //   {
+      //     code: "07",
+      //     name: "台湾居民来往内地通行证",
+      //   },
+      // ], // 证件类型
+      questionCode: "",
+      fillOutFlag: false, // 是否填完成
+      questionnaireFlag: true, // 是个否可见调查问卷
+    };
+  },
+
+  computed: {
+    totalprice() {
+      let price = +this.setmealObj.setmealprice;
+      this.combineitems.forEach((k) => {
+        price += +k.price;
+      });
+      return +price.toFixed(3);
+    },
+    // 实付金额
+    realityprice() {
+      let price = 0;
+      if (this.personalflag == 0) {
+        this.combineitems.forEach((k) => {
+          price += +k.price;
+        });
+        return +(+price + +this.setmealObj.setmealprice).toFixed(3);
+      } else {
+        if (this.setmealObj.grouptype == -1 || this.setmealObj.grouptype == 1) {
+          if (this.setmealObj.addsettlementtype == 0) {
+            return +price.toFixed(3);
+          } else {
+            this.combineitems.forEach((k) => {
+              price += +k.price;
+            });
+            return +(+price + +this.setmealObj.setmealprice).toFixed(3);
+          }
+        } else if (this.setmealObj.grouptype == 2) {
+          this.combineitems.forEach((k) => {
+            price += +k.price;
+          });
+          let rprice = +(
+            +price +
+            +this.setmealObj.setmealprice -
+            +this.setmealObj.quota
+          ).toFixed(3);
+          return rprice > 0 ? rprice : 0;
+        }
+      }
+    },
+  },
+
+  mounted() {
+    this.operatorcode = localStorage.getItem("operatorcode") || "";
+    if (!this.operatorcode) {
+      this.$router.push("/login");
+      return false;
+    }
+    let data = this.$route.query || undefined;
+    if (!data) {
+      this.$router.push("/projectConfirm");
+      return;
+    }
+    this.personalflag = localStorage.getItem("personalflag") || "";
+    this.EditOrderid = localStorage.getItem("EditOrderid") || "";
+    this.combineitems = JSON.parse(decodeURIComponent(data.combineitems));
+    this.checkUserId = this.$route.query.checkUser || "";
+    this.checkUserId && this.handleGetUserList();
+    let delComCode = JSON.parse(localStorage.getItem("delComCode")) || [];
+    if (this.personalflag == 0) {
+      this.setmealcode = data.setmealcode;
+      getListData({
+        businesstype: "SetmealDetail",
+        code: this.setmealcode,
+      }).then((res) => {
+        let data = res.data.result;
+        this.setmealObj = data;
+        for (let i = 0; i < delComCode.length; i++) {
+          let index = this.setmealObj.combineitems.findIndex(
+            (k) => k.combinecode === delComCode[i]
+          );
+          index > -1 && this.setmealObj.combineitems.splice(index, 1);
+        }
+      });
+    } else {
+      this.setmealObj = JSON.parse(localStorage.getItem("setmealInfo")) || "";
+      this.userData = JSON.parse(localStorage.getItem("companyUserInfo")) || "";
+      this.pageForm = {
+        name: this.userData.name,
+        sex: this.userData.sex,
+        birthday: this.userData.birthday,
+        marriage: this.userData.marriage,
+        telephone: this.userData.telephone,
+        hiscode: this.userData.hiscode,
+        healthcard: this.userData.healthcard,
+        idcard: this.userData.idcard,
+        idtype: this.userData.idtype || "01",
+        idcardcn: "",
+        transport: "",
+      };
+      switch (this.userData.idtype || "01") {
+        case "01":
+          this.pageForm.idcardcn = "身份证";
+          break;
+        case "02":
+          this.pageForm.idcardcn = "居民户口簿";
+          break;
+        case "03":
+          this.pageForm.idcardcn = "护照";
+          break;
+        case "04":
+          this.pageForm.idcardcn = "军官证";
+          break;
+        case "05":
+          this.pageForm.idcardcn = "驾驶证";
+          break;
+        case "06":
+          this.pageForm.idcardcn = "港澳居民来往内地通行证";
+          break;
+        case "07":
+          this.pageForm.idcardcn = "台湾居民来往内地通行证";
+          break;
+        default:
+          break;
+      }
+      for (let i = 0; i < delComCode.length; i++) {
+        let index = this.setmealObj.combineitems.findIndex(
+          (k) => k.combinecode === delComCode[i]
+        );
+        index > -1 && this.setmealObj.combineitems.splice(index, 1);
+      }
+    }
+    this.handleGetPriceItems();
+    this.handleShowQ();
+  },
+
+  methods: {
+    // 失焦校验身份证
+    handleCheckIdcard() {
+      let idCardReg =
+        /^(^[1-9]\d{7}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}$)|(^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])((\d{4})|\d{3}[Xx])$)$/;
+      console.log("进来了吗");
+      if (idCardReg.test(this.pageForm.idcard) === false) {
+        this.$toast.fail("身份证格式不合法!");
+        this.pageForm.idcard = "";
+        return;
+      }
+      // 获取性别
+      if (+this.pageForm.idcard.slice(16, 17) % 2 == 0) {
+        this.pageForm.sex = 2;
+      } else {
+        this.pageForm.sex = 1;
+      }
+      // 获取出生年月日
+      this.pageForm.birthday =
+        this.pageForm.idcard.substring(6, 10) +
+        "-" +
+        this.pageForm.idcard.substring(10, 12) +
+        "-" +
+        this.pageForm.idcard.substring(12, 14);
+    },
+    handlePopupClose() {
+      var flag = false,
+        ISFILL = false; // 是否填写
+      for (let i = 0; i < this.questionnairelist.length; i++) {
+        let res = this.questionnairelist[i];
+        for (let k = 0; k < res.questionnaireitems.length; k++) {
+          const element = res.questionnaireitems;
+          // console.log(element[k], element[k].isFill);
+          if (element[k].fillFlag == 1) {
+            flag = true;
+          } // 1必填 0非必填
+          // 子题
+          for (let j = 0; j < element[k].questionnaireitems.length; j++) {
+            const elJ = element[k].questionnaireitems[j];
+            // console.log(elJ, elJ.isFill);
+            if (!elJ.isFill) {
+              ISFILL = true;
+            }
+          }
+          // console.log(element[k]);
+        }
+      }
+      if (flag) {
+        this.$dialog
+          .alert({
+            title: "提示",
+            message: "请填写全部必填项",
+          })
+          .then(() => {
+            // on close
+          });
+        return;
+      } else if (ISFILL) {
+        this.$dialog
+          .alert({
+            title: "提示",
+            message: "问卷未填写完成，是否继续填写",
+            confirmButtonText: "提 交",
+            cancelButtonText: "继续填写",
+            showCancelButton: true,
+          })
+          .then((res) => {
+            this.showQuestionnaire = false;
+            this.fillOutFlag = true; //  已完成填写
+            return;
+          })
+          .catch((err) => {});
+        return;
+      } else {
+        this.showQuestionnaire = false;
+        this.fillOutFlag = true; //  已完成填写
+      }
+    },
+    // 多选回调
+    handlechecBox(item, num) {
+      let result = "";
+      if (item.optionitems) {
+        const IS = item.optionitems.some((k) => {
+          if (k.flag == 1 || !!k.flag) {
+            k.flag = 1;
+            result = k.selectvalue;
+            return true;
+          } else {
+            return false;
+          }
+        });
+        item.isFill = IS ? result : "";
+      } else {
+        item.isFill = item.flag == 1 ? item.selectvalue : "";
+      }
+      if (!item.isFill) {
+        // 如果是必填 1 就把fillFlag改成0
+        item.fillFlag = item.mustflag == 1 ? 1 : 0;
+      } else {
+        item.fillFlag = 0;
+      }
+    },
+    // 输入框回调
+    handleValue(res, item) {
+      // 只需要有个值就行, isFill用来判断是否填写
+      this.$nextTick(() => {
+        if (item.optionitems.length > 0) {
+          item.isFill = item.optionitems[0].selectvalue || "";
+        } else {
+          item.isFill = item.remark || "";
+        }
+      });
+    },
+    // 输入框回调
+    handleUpdate(res, item, Flag) {
+      this.$nextTick(() => {
+        item.optionitems.forEach((k) => {
+          item.isFill = k.remark;
+        });
+
+        //  是否为三段输入框做不同处理
+        if (!Flag) {
+          if (res.length == 3 && item.mustflag == 1) {
+            item.fillFlag = 0;
+          } else {
+            item.fillFlag = 1;
+          }
+        } else {
+          item.fillFlag = 0;
+        }
+      });
+    },
+    // 输入框回调
+    handleInput(item) {
+      item.isFill = item.remark;
+      if (!item.isFill) {
+        // 如果是必填 1 就把fillFlag改成0
+        item.fillFlag = item.mustflag == 1 ? 1 : 0;
+      } else {
+        item.fillFlag = 0;
+      }
+    },
+    // 单选回调
+    handleRadioChange(item) {
+      item.isFill = item.selectvalue;
+      if (!item.isFill) {
+        item.fillFlag = item.mustflag == 1 ? 1 : 0;
+      } else {
+        item.fillFlag = 0;
+      }
+    },
+    // 问卷调查是否可见
+    handleShowQ() {
+      Sys_QuestionnaireForH5_ShowCode().then((res) => {
+        //  1男 2女 3未知
+        const Data = res.data.result.split("-");
+        if (res.data.code == 200 && Data[0] === "0") {
+          this.questionnaireFlag = false;
+          return;
+        }
+        Data.length != 4
+          ? (this.questionnaireFlag = false)
+          : (this.questionnaireFlag = true);
+        this.questionCode =
+          this.pageForm.sex == 1
+            ? Data[1]
+            : this.pageForm.sex == 2
+            ? Data[2]
+            : Data[3];
+      });
+    },
+    // 问卷调查点击回调
+    handleShowQuestionnaire() {
+      // 问卷
+      if (this.questionnairelist && this.questionnairelist.length == 0) {
+        let titlecode = this.questionCode;
+        // 如果个人有code就用个人的
+        if (this.personalflag == 1 && this.setmealObj.quecode) {
+          titlecode = this.setmealObj.quecode;
+        }
+        if (!titlecode) return;
+        questionnaire({ titlecode }).then((res) => {
+          this.questionnairelist = res.data.result;
+          this.questionnairelist.map((k) => {
+            // 题
+            k.questionnaireitems = k.questionnaireitems.map((item) => {
+              // 子题
+              if (item.questionnaireitems.length > 0) {
+                item.questionnaireitems = item.questionnaireitems.map((u) => {
+                  return { ...u, isFill: "", isFill: "", fillFlag: u.mustflag };
+                });
+              }
+              return {
+                ...item,
+                isFill: "",
+                fillFlag: item.mustflag,
+              };
+            });
+
+            return { ...k, questionnaireitems: k.questionnaireitems };
+          });
+          console.log(this.questionnairelist);
+          this.showQuestionnaire = true;
+        });
+      } else {
+        this.showQuestionnaire = true;
+      }
+    },
+    // 获取价格接口回调
+    handleGetPriceItems() {
+      let whereitems = [];
+      let combinecodes = this.combineitems.map((k) => {
+        return k.combinecode;
+      });
+      if (this.personalflag == 0) {
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "setmealcode",
+          value: this.setmealcode,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+      } else {
+        whereitems.push({
+          key: "regid",
+          value: this.userData.regid,
+        });
+        whereitems.push({
+          key: "personalflag",
+          value: this.personalflag,
+        });
+        whereitems.push({
+          key: "combinecodes",
+          value: combinecodes.join(","),
+        });
+        whereitems.push({
+          key: "companycode",
+          value: this.userData.companycode,
+        });
+        whereitems.push({
+          key: "batch",
+          value: this.userData.batch,
+        });
+        whereitems.push({
+          key: "groupcode",
+          value: this.userData.groupcode,
+        });
+      }
+      getListData({
+        businesstype: "CostInfo",
+        whereitems,
+      }).then((res) => {
+        if (!res.data.result) return;
+        let data = res.data.result;
+        this.checkPrice = data.checkPrice;
+        this.personPrice = data.personPrice;
+        this.quota = data.quota;
+        this.totalPrice = data.totalPrice;
+      });
+    },
+    // 点击选中体检人弹框
+    handleCheckShowPerson() {
+      // this.showPerson = true;
+      this.$router.push({
+        path: "/selectUser",
+        query: {
+          setmealcode: this.setmealcode,
+          pageFrom: "reservaInfo",
+          combineitems: encodeURIComponent(JSON.stringify(this.combineitems)),
+        },
+      });
+    },
+    // 获取列表数据回调
+    handleGetUserList() {
+      getListData({
+        businesstype: "MyCheckPersonList",
+        code: this.operatorcode,
+        whereitems: [],
+      }).then((res) => {
+        if (!res.data.result) return;
+        let index = res.data.result.filter((k) => {
+          return k.id === this.checkUserId;
+        })[0];
+        if (index) {
+          this.pageForm = index;
+          switch (index.idtype || "01") {
+            case "01":
+              this.pageForm.idcardcn = "身份证";
+              break;
+            case "02":
+              this.pageForm.idcardcn = "居民户口簿";
+              break;
+            case "03":
+              this.pageForm.idcardcn = "护照";
+              break;
+            case "04":
+              this.pageForm.idcardcn = "军官证";
+              break;
+            case "05":
+              this.pageForm.idcardcn = "驾驶证";
+              break;
+            case "06":
+              this.pageForm.idcardcn = "港澳居民来往内地通行证";
+              break;
+            case "07":
+              this.pageForm.idcardcn = "台湾居民来往内地通行证";
+              break;
+            default:
+              break;
+          }
+        }
+      });
+    },
+    // 选中证件类型回调
+    handleOnConfirmIdtype(value) {
+      // this.pageForm.idtype = value;
+      if (!value) return;
+      switch (value) {
+        case "身份证":
+          this.pageForm.idtype = "01";
+          this.pageForm.idcardcn = "身份证";
+          break;
+        case "居民户口簿":
+          this.pageForm.idtype = "02";
+          this.pageForm.idcardcn = "居民户口簿";
+          break;
+        case "护照":
+          this.pageForm.idtype = "03";
+          this.pageForm.idcardcn = "护照";
+          break;
+        case "军官证":
+          this.pageForm.idtype = "04";
+          this.pageForm.idcardcn = "军官证";
+          break;
+        case "驾驶证":
+          this.pageForm.idtype = "05";
+          this.pageForm.idcardcn = "驾驶证";
+          break;
+        case "港澳居民来往内地通行证":
+          this.pageForm.idtype = "06";
+          this.pageForm.idcardcn = "港澳居民来往内地通行证";
+          break;
+        case "台湾居民来往内地通行证":
+          this.pageForm.idtype = "07";
+          this.pageForm.idcardcn = "台湾居民来往内地通行证";
+          break;
+        default:
+          break;
+      }
+      this.showPelsidtype = false;
+    },
+    // 提交订单回调
+    handleSubmitOrder() {
+      // 不允许为空
+      if (this.personalflag == 0) {
+        let temparr = ["name", "sex", "idcard", "telephone"];
+        // 不允许为空
+        for (let i = 0; i < temparr.length; i++) {
+          if (this.pageForm.hasOwnProperty(temparr[i])) {
+            if (this.pageForm[temparr[i]] === "") {
+              this.$toast.fail("姓名,性别,身份证,手机号不允许为空!");
+              return;
+            }
+          }
+        }
+      }
+      if (!this.chooseDate) {
+        this.$toast.fail("请选择检查日期!");
+        return;
+      }
+      this.loading = true;
+      // 组装数据
+      let orderitem = {
+        regid: this.personalflag == 1 ? this.userData.regid : "",
+        orderid: this.EditOrderid || "",
+        setmealcode: this.setmealObj.setmealcode || "",
+        setmealname: this.setmealObj.setmealname || "",
+        name: this.pageForm.name,
+        sex: this.pageForm.sex,
+        age: 0,
+        ageunit: "岁",
+        birthday: this.pageForm.birthday || "",
+        marriage: this.pageForm.marriage || "",
+        transport: this.pageForm.transport || "",
+        telephone: this.pageForm.telephone || "",
+        idtype: this.pageForm.idtype,
+        idcard: this.pageForm.idcard || "",
+        checkdate: this.chooseDate.title || "",
+        personalflag: this.personalflag,
+        companycode: this.personalflag == 1 ? this.userData.companycode : "",
+        companyname: this.personalflag == 1 ? this.userData.companyname : "",
+        batch: this.personalflag == 1 ? this.userData.batch : "",
+        groupcode: this.personalflag == 1 ? this.userData.groupcode : "",
+        totalprice: this.personPrice || 0,
+        remark: this.personalflag == 1 ? this.userData.remark : "",
+        operatorcode: this.operatorcode,
+        setmealwarnmsg: this.setmealObj.setmealwarnmsg || "",
+        setmealremind: this.setmealObj.setmealreminditems.join("<br>") || "",
+        timeid: this.chooseDate.timeid,
+        selecttimespan: this.chooseDate.selecttimespan,
+        hiscode: this.pageForm.hiscode || "",
+        healthcard: this.pageForm.healthcard || "",
+      };
+      this.setmealObj.combineitems = this.setmealObj.combineitems.map((k) => {
+        return {
+          ...k,
+          addflag: 0,
+        };
+      });
+      this.combineitems = this.combineitems.map((k) => {
+        return {
+          ...k,
+          addflag: 1,
+        };
+      });
+      let orderdetailitems = [
+        ...this.setmealObj.combineitems,
+        ...this.combineitems,
+      ];
+      // 当前问卷是否必填
+      CheckQuestionMustInput({
+        sex: orderitem.sex,
+        companycode: orderitem.companycode,
+        batch: orderitem.batch,
+        groupcode: orderitem.groupcode,
+      }).then((res) => {
+        console.log(res);
+        if (res.data.result && this.fillOutFlag != res.data.result) {
+          console.log(this.fillOutFlag, res.data.result);
+          this.$toast.fail("请填写问卷调查!");
+          this.loading = false;
+          return;
+        }
+        // 保存
+        addCustomerOrder({
+          orderitem,
+          orderdetailitems,
+        })
+          .then((res) => {
+            this.loading = false;
+            if (res.data.code != 200) {
+              this.$toast.fail(res.data.message);
+              return;
+            }
+            this.$toast.success(res.data.message);
+            localStorage.removeItem("delComCode");
+            let data = res.data.result;
+            localStorage.setItem("customercode", data.customercode); // 支付 orderid
+            localStorage.setItem("orderid", data.orderid); // 支付 orderid
+            localStorage.removeItem("EditOrderid"); // 修改订单 orderid
+            saveAppoint({
+              regiditems: [data.regid],
+              checknoitems: [],
+              selectdate: this.chooseDate.title,
+              timeid: this.chooseDate.timeid,
+            }).then((res) => {
+              if (res.data.result && res.data.result.issuccess) {
+                this.$dialog
+                  .alert({
+                    title: "提示",
+                    message: "订单提交成功",
+                    confirmButtonText: "查看订单",
+                    confirmButtonColor: "#1989fa",
+                  })
+                  .then(() => {
+                    // on confirm
+                    this.$router.push({
+                      path: "/orderConfirm",
+                      query: { orderid: data.orderid },
+                    });
+                  })
+                  .catch(() => {
+                    // on cancel
+                  });
+              }
+            });
+          })
+          .catch((err) => {
+            this.loading = false;
+          });
+      });
+    },
+    // 点击确认选中日期回调
+    handleCheckDateSubmit() {
+      if (!this.chooseDate) {
+        this.$toast.success("请先选中日期!");
+        return;
+      }
+      if (this.setcompanymodel == 1) {
+        if (!this.chooseTimes) {
+          this.$toast.success("请先选中预约时段!");
+          return;
+        }
+      }
+      // this.chooseDate =
+      //   this.calendarData.filter((k) => {
+      //     return this.chooseDateTitle == k.titleday;
+      //   })[0] || "";
+      this.showPelsDate = false;
+    },
+    // 点击选择日期效果
+    handleCheckChooseDate(item) {
+      if (!item) return;
+      if (item.status != 1) {
+        this.$toast.fail("当前日期不可预约!");
+        return;
+      }
+      this.chooseDate = item;
+      console.log(this.chooseDate, "this.chooseDate");
+      this.chooseDateTitle = item.titleday;
+    },
+    handleCheckChooseTimes(item) {
+      this.chooseTimes = item;
+      this.chooseDate.timeid = item.timeid;
+      console.log(this.chooseDate.timeid);
+    },
+    // 点击选择日期回调
+    handleCheckDateShow() {
+      let data = null;
+      // personflag 0-个人  1-单位
+      if (this.personalflag == 0) {
+        TimeStaticForPerson({ setmealcode: this.setmealcode })
+          .then((res) => {
+            this.calendarData = res.data.result.dateitems;
+            this.calendarSource = JSON.parse(JSON.stringify(this.calendarData));
+            this.setcompanymodel = res.data.result.setcompanymodel;
+            this.showPelsDate = true;
+          })
+          .catch(() => {
+            this.$toast.success("没有符合的预约日期!");
+          });
+      } else {
+        data = {
+          personflag: this.personalflag,
+          companycode: this.userData.companycode,
+          batch: this.userData.batch,
+        };
+        timeStatic(data)
+          .then((res) => {
+            this.calendarData = res.data.result.dateitems;
+            this.calendarSource = JSON.parse(JSON.stringify(this.calendarData));
+            this.setcompanymodel = res.data.result.setcompanymodel;
+            this.showPelsDate = true;
+          })
+          .catch(() => {
+            this.$toast.success("没有符合的预约日期!");
+          });
+      }
+    },
+    // 改变是否只显示可预约
+    handleChangeIsReserv(flag) {
+      if (flag) {
+        this.calendarData = this.calendarSource.filter((k) => {
+          return k.status == 1;
+        });
+      } else {
+        this.calendarData = tJSON.parse(JSON.stringify(this.calendarSource));
+      }
+      // status 1-可预约
+      console.log(flag);
+    },
+    // 选择生日回调
+    handleChangeonBirthday(time) {
+      this.pageForm.birthday = this.formatDate(+time);
+      this.showPicker = false;
+    },
+    formatDate(value) {
+      // 时间戳转换日期格式方法
+      if (value == null) {
+        return "";
+      } else {
+        const date = new Date(value);
+        const y = date.getFullYear(); // 年
+        let MM = date.getMonth() + 1; // 月
+        MM = MM < 10 ? "0" + MM : MM;
+        let d = date.getDate(); // 日
+        d = d < 10 ? "0" + d : d;
+        return y + "-" + MM + "-" + d;
+      }
+    },
+  },
+
+  watch: {},
+};
+</script>
+<style lang='scss' scoped>
+/deep/.el-checkbox {
+  white-space: normal !important;
+}
+.reservaInfo {
+  height: calc(100vh - 94px);
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  padding: 5px;
+  position: relative;
+  .mainbody {
+    box-sizing: border-box;
+    height: 100%;
+    background-color: #fff;
+    overflow-y: auto;
+    .pageform {
+      box-sizing: border-box;
+      padding-bottom: 60px;
+      .name_box {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        padding-right: 10px;
+        border-bottom: 1px solid #efefef;
+        .van-button {
+          width: 100px;
+        }
+      }
+      .date_box {
+        height: 40px;
+        border-bottom: 1px solid #efefef;
+        box-sizing: border-box;
+        padding: 0 16px;
+        .van-cell__value {
+          justify-content: space-between;
+          align-items: center;
+          display: flex;
+          .btn {
+            .van-button {
+              width: 80px;
+            }
+          }
+          .content {
+            font-size: 16px;
+          }
+          .title {
+            display: flex;
+            align-items: center;
+            .date_img {
+              width: 20px;
+              height: 20px;
+            }
+            .text {
+              font-size: 16px;
+              font-weight: 600;
+              color: #000;
+              margin-left: 10px;
+            }
+          }
+        }
+      }
+      .courtyardarea {
+        height: 60px;
+        border-bottom: 1px solid #efefef;
+        box-sizing: border-box;
+        padding: 0 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        .courtyardarea_text {
+          font-size: 16px;
+          font-weight: 600;
+        }
+        .setmeal_text {
+          margin-top: 2px;
+          font-size: 16px;
+          color: #7c8586;
+        }
+      }
+      .meetprice {
+        height: 40px;
+        border-bottom: 1px solid #efefef;
+        box-sizing: border-box;
+        padding: 0 16px;
+        font-size: 16px;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        .title {
+          font-weight: 600;
+        }
+        .price {
+        }
+      }
+      .actualprice {
+        height: 40px;
+        border-bottom: 1px solid #efefef;
+        box-sizing: border-box;
+        padding: 0 16px;
+        font-size: 16px;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        .title {
+          font-weight: 600;
+        }
+        .price {
+          display: flex;
+          .p_price {
+            font-weight: 600;
+            color: red;
+          }
+        }
+      }
+      .paytitle {
+        height: 40px;
+        border-bottom: 1px solid #efefef;
+        box-sizing: border-box;
+        padding: 0 16px;
+        font-size: 16px;
+        color: #000;
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+      }
+      .payradio {
+        .title_box {
+          display: flex;
+          align-items: center;
+          .paytitle_img {
+            width: 22px;
+            height: 18px;
+          }
+          .title {
+            font-weight: 600;
+            margin-left: 8px;
+          }
+        }
+      }
+    }
+
+    .person_popup {
+      .person_content {
+        height: 100%;
+        box-sizing: border-box;
+        padding-top: 10%;
+        .personradio {
+          .person_box {
+            display: flex;
+            > div {
+              margin-right: 10px;
+            }
+          }
+        }
+      }
+    }
+    .questionnaire_popup {
+      .btnClose {
+        display: flex;
+        justify-content: end;
+        .iconClos {
+          margin: 0.3rem 0.3rem 0 0.3rem;
+          font-size: 0.5rem;
+        }
+      }
+      .questionnaire_content {
+        height: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        overflow-y: auto;
+        // padding-top: 10%;
+      }
+    }
+    .pelsdate_popup {
+      .pelsdate_content {
+        height: 100%;
+        box-sizing: border-box;
+        padding-top: 12%;
+        .top_tips {
+          height: 25px;
+        }
+        .top_head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          height: 38px;
+          margin-top: 2px;
+          padding: 0 15px;
+          box-sizing: border-box;
+          border-bottom: 1px solid #d8d8d8;
+          .head_title {
+            font-size: 16px;
+            font-weight: 600;
+          }
+          .van-checkbox {
+            .van-checkbox__label {
+              font-size: 16px;
+            }
+          }
+        }
+        .times_roll {
+          box-sizing: border-box;
+          height: 220px;
+          display: flex;
+          flex-wrap: wrap;
+          padding: 15px;
+          overflow-y: auto;
+          .times_item {
+            flex-shrink: 0;
+            background-color: #f2f2f2;
+            border-radius: 4px;
+            width: 100px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 9px 9px 0;
+            color: #000;
+            font-size: 14px;
+            border: 1px solid #dcdfe6;
+          }
+          .times_bgl {
+            background-color: #409eff !important;
+            .ttititle,
+            .tticontent {
+              color: #fff !important;
+            }
+          }
+        }
+        .calendar_roll {
+          box-sizing: border-box;
+          height: 300px;
+          display: flex;
+          flex-wrap: wrap;
+          padding: 15px;
+          overflow-y: auto;
+          .calendar_item {
+            flex-shrink: 0;
+            background-color: #f2f2f2;
+            border-radius: 4px;
+            height: 100px;
+            width: 75px !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 9px 9px 0;
+            .week {
+              font-size: 16px;
+              font-weight: 600;
+              color: #000;
+            }
+            .date {
+              font-size: 16px;
+              color: #676767;
+              margin: 5px 0;
+            }
+            .today {
+              font-size: 14px;
+              color: #27a7e0;
+            }
+            .is_reserv {
+              font-size: 16px;
+              color: #27a7e0;
+            }
+          }
+
+          .calendar_bgl {
+            background-color: #409eff !important;
+            .week,
+            .date,
+            .today,
+            .is_reserv {
+              color: #fff !important;
+            }
+          }
+        }
+        .pelsdate_btn {
+          margin-top: 20px;
+          padding: 0 15px;
+          box-sizing: border-box;
+          text-align: center;
+          .van-button {
+            width: 220px;
+          }
+        }
+      }
+    }
+  }
+  .footer {
+    width: 100%;
+    box-sizing: border-box;
+    height: 45px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    justify-content: space-between;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    .van-button {
+      width: 85px;
+    }
+    .footer_text {
+      .footer_icon {
+        width: 26px;
+        height: 26px;
+        margin-right: 14px;
+      }
+      .f_price {
+        margin-top: 4px;
+        color: red;
+        font-weight: 600;
+        font-size: 16px;
+      }
+    }
+  }
+  .van-popup {
+    height: 30%;
+  }
+}
+/deep/.el-radio {
+  white-space: normal !important;
+}
+// 其他信息
+.life_habit {
+  // padding-left: 20px;
+  height: 85%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  .Questionnaire {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #cccccc;
+    .life_habit_title {
+      font-size: 18px;
+      line-height: 50px;
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      .el-radio-group {
+        margin-left: 20px;
+      }
+    }
+    .life_habit_content {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      width: 100%;
+      .basic_information {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-right: 20px;
+        min-width: 60%;
+        .two_topic {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          span {
+            font-size: 15px;
+          }
+          .two_options {
+            margin-right: 10px;
+            // display: inline-block;
+
+            /deep/.el-radio {
+              white-space: normal !important;
+            }
+
+            .radiobox {
+              width: 95vw;
+              display: flex;
+              align-items: center;
+              .el-radio__label {
+                // width: 100% !important;
+              }
+            }
+          }
+        }
+        .three_topic {
+          // display: flex;
+          // flex-wrap: wrap;
+          padding-left: 20px;
+          margin: 8px 0;
+          width: 100%;
+          .spanClas {
+            display: block;
+            font-size: 15px;
+          }
+          .three_title {
+            display: flex;
+            line-height: 30px;
+          }
+          .three_content {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            align-items: flex-start !important;
+            flex-direction: column !important;
+            .three_options {
+              display: flex;
+              align-items: center;
+              padding-left: 20px;
+              font-size: 15px;
+              .el-input {
+                margin-left: 10px;
+              }
+              // /deep/.van-checkbox__label,/deep/.van-radio__label{
+              //   font-size: 16px !important;
+              // }
+            }
+          }
+        }
+      }
+      span {
+        line-height: 40px;
+        margin-right: 10px;
+        // white-space: nowrap;
+        .el-input {
+          width: 75px;
+        }
+        .el-radio-group {
+          margin-left: 20px;
+        }
+      }
+    }
+  }
+}
+</style>

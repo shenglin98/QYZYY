@@ -1,0 +1,89 @@
+<template>
+    <div class="subscribe">
+        <div class="user_msg">
+            <div class="medical_man">
+                <div>体检人</div>
+            </div>
+            <div class="message_box">
+                <div class="message_list">
+                    <div class="lable">姓名</div>
+                    <div class="parameter">{{userMessage.name}}</div>
+                </div>
+                <div class="message_list">
+                    <div class="lable">性别</div>
+                    <div class="parameter" v-if="userMessage.sex == '1'">男</div>
+                    <div class="parameter" v-if="userMessage.sex == '2'">女</div>
+                </div>
+                <div class="message_list">
+                    <div class="lable">手机号</div>
+                    <div class="parameter">{{userMessage.telephone}}</div>
+                </div>
+                <div class="message_list">
+                    <div class="lable">体检号</div>
+                    <div class="parameter">{{userMessage.checkno}}</div>
+                </div>
+                <div class="message_list">
+                    <div class="lable">缴费日期</div>
+                    <div class="parameter">{{userMessage.chargedate}}</div>
+                </div>
+                <div class="message_list" v-if="userMessage.personalflag == 1">
+                    <div class="lable">单位名称</div>
+                    <div class="parameter">{{userMessage.companyname}}</div>
+                </div>
+                <div class="message_list" v-if="userMessage.personalflag == 1">
+                    <div class="lable">批次</div>
+                    <div class="parameter">{{userMessage.batch}}</div>
+                </div>
+            </div>
+            <div class="data_box">
+                <div class="data_left">
+                    <img src="/static/image/data_icon.png" alt="">
+                    <!-- checkdate -->
+                    <span>检查日期</span>
+                    <div v-if="!time&&!userMessage.checkdate">未预约</div>
+                </div>
+                <div class="data_right" @click="openCalendar" v-if="!time&&!userMessage.checkdate">
+                    请选择
+                </div>
+                <div class="time_msg" v-if="time" @click="openCalendar">
+                    <span>{{title}}</span>
+                    <span>{{time}}</span>
+                </div>
+            </div>
+        </div>
+        <div class="medical_plan">
+            <div class="package_title" v-if="userMessage.combineitems[0].setmealname">体检套餐（1）</div>
+            <div class="package_name" v-if="userMessage.combineitems[0].setmealname">{{userMessage.combineitems[0].setmealname}}</div>
+            <div class="medical_project">体检项目（{{userMessage.combineitems.length}}）</div>
+            <div class="project_list">
+                <div class="list" v-for="(item,index) in userMessage.combineitems" :key="index">{{index}}、{{item.combinename}}</div>
+            </div>
+        </div>
+        <!-- <div class="notice_box">
+            <div class="notice_title">
+                注意事项
+                <img src="/static/image/notice.png" alt="">
+            </div>
+            <div class="notice_content">*一般体检（体检中心专用）一般体检（体检</div>
+        </div> -->
+        <nut-popup v-model="show">
+            <nut-tab @tab-switch="tabSwitch" :is-scroll="true" :def-index="0"
+            v-if="appointmentDate.length != '0'">
+                <nut-tab-panel 
+                v-for="(item,index) in appointmentDate" :key="index"
+                :tab-title="item.tabTitle"
+                >
+                <div class="timelist">
+                    <div class="lister" v-for="(items,indexs) in item.contentitems" :key="indexs" @click="getTimes(items.contentkey,items.timeid)">
+                        {{items.contentkey}} <span>{{items.contentvalue}}</span>
+                    </div>
+                </div>
+                </nut-tab-panel>
+            </nut-tab>
+        </nut-popup>
+    </div>
+</template>
+
+<script src="./index.vue.js" lang="js"></script>
+<!-- Add "scoped" attribute to limit CSS to this component only -->
+<style src="./index.vue.scss" lang="scss" scoped></style>
