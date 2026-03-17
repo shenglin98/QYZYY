@@ -83,21 +83,13 @@ export default {
         // -----------------
         this.operatorcode = localStorage.getItem("operatorcode") || "";
         const code = this.handleGetUrlParam('code')
-            // const code = 'abcdef123456'
-        console.log('【授权流程】operatorcode:', this.operatorcode, 'code:', code);
-        // 测试用打包删掉
         if (!this.operatorcode && !code) {
-            console.log('【授权流程】无operatorcode且无code，开始获取微信授权');
-            this.$toast.fail('未获取到授权code，即将跳转微信授权');
             this.handleGetCode()
             return
         } else if (!this.operatorcode && code) {
-            // 调用后端接口获取token 有就是有绑定默认登录 没有就要获取新的code跳转登录页(首次绑定)
-            console.log('【授权流程】有code无operatorcode，开始调用登录接口');
             this.handleUserLogin(code);
             return
         }
-        console.log('【授权流程】已登录，operatorcode存在');
 
         this.showTitle = this.$route.meta.title || "体检系统";
         if (this.$route.name != "viewReport") {
@@ -180,18 +172,12 @@ export default {
         },
         // 登录接口-清远
         handleUserLogin(code) {
-            console.log('【登录接口】开始调用WxLogin，code:', code);
-            this.$toast.fail('正在请求登录接口' + code);
-
             http.post(`${location.origin}/api-pay/Register/WxLogin`, {
                 Code: code
             }).then(async(Res) => {
-                console.log('【登录接口】返回结果:', Res);
                 if (Res.data.Result) {
                     let data = Res.data.Result;
                     if (data.token) {
-                        console.log('【登录接口】登录成功，token:', data.token);
-                        this.$toast.success('登录成功');
                         this.operatorcode = data.token;
                         localStorage.setItem("isGetOpenId", true);
                         let tempStr = data.licenseKey;
@@ -212,8 +198,6 @@ export default {
                         data && localStorage.setItem("BEARER-VALUE", data.bearerValue);
                         this.handleOutUserInfo();
                     } else {
-                        console.log('【登录接口】无token，需要授权');
-                        this.$toast.fail('当前暂未授权，请去授权');
                         this.$dialog
                             .alert({
                                 title: "提示",
@@ -226,23 +210,10 @@ export default {
                                 location.href = location.origin + location.pathname + '#/login';
                             })
                     }
-                } else {
-                    console.log('【登录接口】返回无Result:', Res.data);
-                    this.$toast.fail('登录返回异常: ' + (Res.data.message || '未知错误'));
                 }
 
             }).catch((error) => {
-                console.log('【登录接口】请求失败:', error);
-                let errorMsg = '登录失败';
-                if (error.response) {
-                    errorMsg = '登录失败: ' + (error.response.status || '') + ' ' + (error.response.data && (error.response.data.message || error.response.data.msg) || '');
-                } else if (error.request) {
-                    errorMsg = '登录请求失败，请检查网络';
-                } else {
-                    errorMsg = '登录错误: ' + error.message;
-                }
-                this.$toast.fail(errorMsg);
-                console.log('err', error)
+                console.log('登录失败:', error);
             })
         },
         handleGetOpenId(code) {
