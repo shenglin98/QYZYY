@@ -20,6 +20,7 @@ const orderMessageOld = r => require.ensure([], () => r(require('@/views/orderMe
 const GroupsCheck = r => require.ensure([], () => r(require('@/views/groupsCheck/index.vue')), 'groupsCheck')
 
 const ViewReport = r => require.ensure([], () => r(require('@/views/viewReport/index.vue')), 'viewReport')
+const ShowReport = r => require.ensure([], () => r(require('@/views/showReport/index.vue')), 'showReport')
 
 // 详情页面
 const Details = r => require.ensure([], () => r(require('@/views/details/details.vue')), 'details');
@@ -113,6 +114,10 @@ export default new Router({
                 path: '/viewReport',
                 name: 'viewReport',
                 component: ViewReport,
+            }, {
+                path: '/showReport',
+                name: 'showReport',
+                component: ShowReport,
             }, {
                 path: '/reservation',
                 name: 'reservation',

@@ -1,0 +1,4 @@
+select a.regid from Customer_conclusion a 
+inner join Customer_register b on a.regid=b.regid 
+where b.checktype='7' and a.checkdate>CONVERT(varchar(10),GETDATE(),23) and a.checkdate <DATEADD(MINUTE, -10, GETDATE()) and totalflag=1
+and not exists(select top 1 1 from Customer_register_push where regid=a.regid and pushcategory='WechatReportComplete' and pushstatus=1)
